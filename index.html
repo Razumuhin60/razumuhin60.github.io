@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Fluid Simulation</title>
+<style>
+  html, body { margin: 0; width: 100%; height: 100%; min-height: 100%; background: #000; overflow: hidden; overscroll-behavior: none; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  :fullscreen, :fullscreen body { width: 100vw; height: 100vh; background: #000; }
+  :fullscreen canvas { width: 100vw; height: 100vh; }
+  /* ---------- Modern kontrol arayüzü ---------- */
+  :root {
+    --panel-bg: rgba(10, 14, 24, .72);
+    --panel-border: rgba(255,255,255,.12);
+    --muted: rgba(255,255,255,.58);
+    --text: rgba(255,255,255,.94);
+    --accent: #8ef6da;
+  }
+  #controlPanel {
+    position: fixed; top: max(16px, env(safe-area-inset-top)); right: 16px; z-index: 30;
+    width: min(360px, calc(100vw - 32px)); max-height: min(760px, calc(100dvh - 32px));
+    overflow: auto; scrollbar-width: thin;
+    padding: 14px;
+    border: 1px solid var(--panel-border); border-radius: 22px;
+    background: linear-gradient(180deg, rgba(19,25,40,.86), rgba(8,12,22,.74));
+    backdrop-filter: blur(24px) saturate(145%); -webkit-backdrop-filter: blur(24px) saturate(145%);
+    box-shadow: 0 24px 80px rgba(0,0,0,.42), inset 0 1px 0 rgba(255,255,255,.06);
+    color: var(--text); font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+    transform: translate3d(0,0,0); opacity: 1; visibility: visible;
+    transition: opacity .22s ease, transform .22s ease, visibility .22s ease;
+  }
+  #controlPanel.hidden { opacity: 0; transform: translate3d(18px,-8px,0) scale(.98); visibility: hidden; pointer-events: none; }
+  .panelHead { display:flex; align-items:center; justify-content:space-between; gap:12px; padding: 4px 2px 12px; }
+  .headActions { display:flex; align-items:center; gap:7px; }
+  .languagePicker { height:36px; display:flex; align-items:center; gap:5px; padding:0 8px 0 9px; border:1px solid rgba(255,255,255,.10); border-radius:11px; background:rgba(255,255,255,.055); color:rgba(255,255,255,.82); }
+  .languagePicker .globe { font-size:14px; line-height:1; opacity:.75; }
+  .languagePicker select { border:0; outline:none; background:transparent; color:rgba(255,255,255,.9); font:700 10px/1 inherit; cursor:pointer; max-width:74px; }
+  .languagePicker select option { color:#111; background:#fff; }
+  .brand { display:flex; align-items:center; gap:10px; }
+  .brandIcon { width:38px; height:38px; display:grid; place-items:center; border-radius:12px; background: linear-gradient(145deg, rgba(142,246,218,.18), rgba(126,170,255,.12)); border:1px solid rgba(142,246,218,.2); }
+  .brandIcon svg { width:20px; height:20px; color:var(--accent); }
+  .brandTitle { font-size:14px; font-weight:800; letter-spacing:.35px; }
+  .brandSub { margin-top:2px; color:var(--muted); font-size:11px; }
+  .iconBtn { width:36px; height:36px; border:1px solid rgba(255,255,255,.1); border-radius:11px; background:rgba(255,255,255,.055); color:white; display:grid; place-items:center; cursor:pointer; transition:.18s ease; }
+  .iconBtn:hover { background:rgba(255,255,255,.11); transform:translateY(-1px); }
+  .iconBtn svg { width:17px; height:17px; }
+  .panelSection { padding:12px 0; border-top:1px solid rgba(255,255,255,.07); }
+  .sectionTitle { display:flex; align-items:center; justify-content:space-between; margin-bottom:9px; font-size:11px; text-transform:uppercase; letter-spacing:1.25px; color:rgba(255,255,255,.52); font-weight:800; }
+  .sectionHint { font-size:10px; letter-spacing:0; text-transform:none; color:rgba(255,255,255,.32); font-weight:600; }
+  .themeGrid { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:7px; max-height:218px; overflow:auto; padding:2px; margin:-2px; scrollbar-width:thin; }
+  .themeBtn { min-width:0; border:1px solid rgba(255,255,255,.09); border-radius:13px; background:linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.025)); color:rgba(255,255,255,.76); padding:10px 9px; cursor:pointer; font:700 11px/1.15 inherit; text-align:left; display:flex; align-items:center; gap:8px; transition:transform .16s ease, background .16s ease, border-color .16s ease, color .16s ease; }
+  .themeBtn:hover { transform:translateY(-1px); background:rgba(255,255,255,.09); color:#fff; border-color:rgba(255,255,255,.17); }
+  .themeBtn.active { color:#fff; background:linear-gradient(135deg, rgba(142,246,218,.14), rgba(126,170,255,.09)); border-color:rgba(142,246,218,.38); box-shadow:inset 0 0 0 1px rgba(142,246,218,.06), 0 6px 18px rgba(0,0,0,.12); }
+  .themeSwatch { flex:0 0 9px; width:9px; height:9px; border-radius:50%; background:linear-gradient(135deg,#8ef6da,#7eaaff); box-shadow:0 0 10px rgba(142,246,218,.42); }
+  .themeBtn:nth-child(3n) .themeSwatch { background:linear-gradient(135deg,#ff8bd1,#9f8cff); }
+  .themeBtn:nth-child(3n+1) .themeSwatch { background:linear-gradient(135deg,#74e7ff,#8ef6da); }
+  .themeBtn:nth-child(4n) .themeSwatch { background:linear-gradient(135deg,#ffd36e,#ff8a8a); }
+  .segmented { display:grid; grid-template-columns:repeat(3,1fr); gap:5px; padding:4px; border:1px solid rgba(255,255,255,.08); border-radius:14px; background:rgba(0,0,0,.17); }
+  .segmented button { border:0; border-radius:10px; background:transparent; color:rgba(255,255,255,.5); padding:9px 5px; cursor:pointer; font:700 11px inherit; }
+  .segmented button.active { background:rgba(255,255,255,.11); color:white; box-shadow:inset 0 0 0 1px rgba(255,255,255,.08); }
+  .colorRow { display:grid; grid-template-columns:1fr auto; gap:10px; align-items:center; margin-top:9px; }
+  .colorInfo { padding:10px 12px; border:1px solid rgba(255,255,255,.08); border-radius:12px; background:rgba(255,255,255,.04); }
+  .colorInfo strong { display:block; font-size:12px; }
+  .colorInfo span { display:block; margin-top:2px; color:var(--muted); font-size:10px; }
+  #colorInput { width:46px; height:40px; padding:4px; border-radius:12px; border:1px solid rgba(255,255,255,.1); background:rgba(255,255,255,.05); }
+  .rangeRow { margin:11px 0 13px; }
+  .rangeMeta { display:flex; justify-content:space-between; gap:8px; margin-bottom:6px; }
+  .rangeName { font-size:12px; font-weight:650; color:rgba(255,255,255,.82); }
+  .rangeValue { min-width:46px; text-align:right; color:var(--accent); font-size:11px; font-weight:800; font-variant-numeric:tabular-nums; }
+  input[type=range] { width:100%; accent-color:var(--accent); }
+  .qualityGrid { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; }
+  .qualityBtn { border:1px solid rgba(255,255,255,.08); border-radius:12px; background:rgba(255,255,255,.045); color:rgba(255,255,255,.56); padding:10px 6px; cursor:pointer; font:700 11px inherit; }
+  .qualityBtn.active { color:white; border-color:rgba(142,246,218,.32); background:rgba(142,246,218,.1); box-shadow:0 0 0 1px rgba(142,246,218,.06), inset 0 0 18px rgba(142,246,218,.05); }
+  .panelFoot { display:flex; align-items:center; justify-content:space-between; gap:10px; padding-top:12px; border-top:1px solid rgba(255,255,255,.07); }
+  .resetBtn { border:1px solid rgba(255,255,255,.1); border-radius:11px; background:rgba(255,255,255,.05); color:rgba(255,255,255,.72); padding:9px 11px; cursor:pointer; font:700 11px inherit; }
+  .shortcut { color:rgba(255,255,255,.34); font-size:10px; line-height:1.45; text-align:right; }
+
+  #controlToggle {
+    position:fixed; top:max(16px, env(safe-area-inset-top)); right:16px; z-index:25;
+    width:48px; height:48px; border:1px solid rgba(255,255,255,.13); border-radius:15px;
+    background:rgba(9,13,23,.5); color:white; display:grid; place-items:center; cursor:pointer;
+    backdrop-filter:blur(16px) saturate(140%); -webkit-backdrop-filter:blur(16px) saturate(140%);
+    box-shadow:0 14px 40px rgba(0,0,0,.3); transition:.2s ease;
+  }
+  #controlToggle:hover { transform:translateY(-2px); background:rgba(255,255,255,.1); }
+  #controlToggle svg { width:21px; height:21px; }
+  #controlToggle.hidden { opacity:0; pointer-events:none; transform:scale(.9); }
+
+  #hud {
+    position: fixed; left: 16px; bottom: max(16px, env(safe-area-inset-bottom)); z-index: 19;
+    display: flex; gap: 8px; align-items: center;
+    padding: 10px 12px; border-radius: 14px;
+    background: rgba(8,12,20,.42); border: 1px solid rgba(255,255,255,.10);
+    backdrop-filter: blur(14px) saturate(135%); -webkit-backdrop-filter: blur(14px) saturate(135%);
+    box-shadow: 0 10px 30px rgba(0,0,0,.22); user-select: none;
+    color: rgba(255,255,255,.86); font: 600 12px/1.2 system-ui, sans-serif;
+  }
+  #hud .dot { width: 7px; height: 7px; border-radius: 50%; background: #72f1c3; box-shadow: 0 0 12px #72f1c3; }
+
+  #fullscreenBtn {
+    position: fixed; right: 14px; bottom: max(14px, env(safe-area-inset-bottom)); z-index: 21;
+    width: 46px; height: 46px; border: 1px solid rgba(255,255,255,.14);
+    border-radius: 14px; background: rgba(8,12,20,.46); color: white;
+    display: grid; place-items: center; cursor: pointer;
+    backdrop-filter: blur(14px) saturate(135%); -webkit-backdrop-filter: blur(14px) saturate(135%);
+    box-shadow: 0 10px 30px rgba(0,0,0,.22); transition: transform .18s ease, background .18s ease;
+  }
+  #fullscreenBtn:hover { transform: translateY(-2px); background: rgba(255,255,255,.12); }
+  #fullscreenBtn:active { transform: scale(.96); }
+  #fullscreenBtn svg { width: 20px; height: 20px; }
+
+  @media (max-width: 700px) {
+    #controlPanel { top:max(8px, env(safe-area-inset-top)); right:8px; width:min(330px, calc(100vw - 16px)); max-height:calc(100dvh - 16px); border-radius:19px; }
+    #controlToggle { top:max(9px, env(safe-area-inset-top)); right:9px; width:44px; height:44px; }
+    #hud { left:9px; bottom:max(9px, env(safe-area-inset-bottom)); padding:9px 10px; }
+    #fullscreenBtn { right:9px; bottom:max(9px, env(safe-area-inset-bottom)); width:44px; height:44px; }
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud"><span class="dot"></span><span id="hudText">Smoke • High quality • H: Controls</span></div>
+<button id="controlToggle" type="button" aria-label="Open controls" title="Open controls">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10M14 4v6M8 14v6"/></svg>
+</button>
+<section id="controlPanel" aria-label="Fluid controls">
+  <div class="panelHead">
+    <div class="brand"><div class="brandIcon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 15c3-4 5-8 8-8 3 0 4 4 8 0M4 19c4-3 6-5 9-5 2 0 4 1 7-1"/></svg></div><div><div class="brandTitle">FLUID STUDIO</div><div class="brandSub" id="brandSub">Shape the flow with touch</div></div></div>
+    <div class="headActions">
+      <label class="languagePicker" for="languageSelect"><span class="globe">◎</span><select id="languageSelect" aria-label="Language"></select></label>
+      <button class="iconBtn" id="closeControls" type="button" aria-label="Hide controls" title="Hide controls"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+  </div>
+  <div class="panelSection">
+    <div class="sectionTitle"><span id="appearanceLabel">Appearance</span><span class="sectionHint" id="themeHint">Smoke</span></div>
+    <div class="themeGrid" id="themeGrid" role="listbox" aria-label="Tema seç"></div>
+    <div class="segmented" style="margin-top:9px"><button type="button" data-color="Gökkuşağı" id="colorRainbow">Rainbow</button><button type="button" data-color="Neon" id="colorNeon">Neon</button><button type="button" data-color="Tek Renk" id="colorSingle">Single color</button></div>
+    <div class="colorRow"><div class="colorInfo"><strong id="customColorLabel">Custom color</strong><span id="colorHex">#00ffd0</span></div><input id="colorInput" type="color" value="#00ffd0" aria-label="Custom color"></div>
+  </div>
+  <div class="panelSection">
+    <div class="sectionTitle" id="flowMotionLabel">Flow & Motion</div>
+    <div class="rangeRow"><div class="rangeMeta"><span class="rangeName" id="label-pattern">Pattern size</span><span class="rangeValue" id="patternValue"></span></div><input id="patternRange" type="range" min="4" max="40" step="1"></div>
+    <div class="rangeRow"><div class="rangeMeta"><span class="rangeName" id="label-speed">Simulation speed</span><span class="rangeValue" id="speedValue"></span></div><input id="speedRange" type="range" min="0.1" max="3" step="0.01"></div>
+    <div class="rangeRow"><div class="rangeMeta"><span class="rangeName" id="label-curl">Vortex</span><span class="rangeValue" id="curlValue"></span></div><input id="curlRange" type="range" min="0" max="50" step="1"></div>
+    <div class="rangeRow"><div class="rangeMeta"><span class="rangeName" id="label-radius">Trail thickness</span><span class="rangeValue" id="radiusValue"></span></div><input id="radiusRange" type="range" min="0.05" max="1" step="0.01"></div>
+    <div class="rangeRow" style="margin-bottom:2px"><div class="rangeMeta"><span class="rangeName" id="label-dissipation">Dissipation</span><span class="rangeValue" id="dissipationValue"></span></div><input id="dissipationRange" type="range" min="0" max="4" step="0.05"></div>
+  </div>
+  <div class="panelSection">
+    <div class="sectionTitle"><span id="qualityLabel">Quality</span><span class="sectionHint" id="qualityHint">Starts high</span></div>
+    <div class="qualityGrid"><button type="button" class="qualityBtn" data-quality="Düşük" id="qualityLow">Low</button><button type="button" class="qualityBtn" data-quality="Orta" id="qualityMedium">Medium</button><button type="button" class="qualityBtn" data-quality="Yüksek" id="qualityHigh">High</button></div>
+  </div>
+  <div class="panelFoot"><button class="resetBtn" id="resetBtn" type="button">↺ Reset</button><div class="shortcut" id="shortcutText">H hide/show · T theme · F fullscreen</div></div>
+</section>
+<button id="fullscreenBtn" type="button" aria-label="Fullscreen" title="Fullscreen">
+  <svg id="fsIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+    <path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/>
+  </svg>
+</button>
+<script>
+'use strict';
+const canvas = document.getElementById('c');
+const isMobile = /Android|iPhone|iPad|iPod|Mobi/i.test(navigator.userAgent) || innerWidth < 700;
+
+// ---------- Ayarlar ----------
+const QUALITY = { 'Düşük': 64, 'Orta': 128, 'Yüksek': 256 };
+const THEMES = ['Duman', 'Noktalar', 'Çizgiler', 'Piksel', 'Kontur', 'Neon Hat', 'Akış Çizgileri', 'Kaleydoskop', 'Termal', 'Cam', 'Mürekkep', 'Parçacık İzleri', 'Aurora'];
+const cfg = {
+  theme: 'Duman',
+  pattern: 12,
+  colorMode: 'Gökkuşağı',
+  color: '#00ffd0',
+  speed: 1,
+  quality: 'Yüksek',
+  curl: 25,
+  splatRadius: 0.25,
+  dissipation: 0.9,
+  pressureIters: isMobile ? 12 : 20,
+};
+
+// ---------- WebGL kurulumu ----------
+const glOpts = { alpha: false, depth: false, stencil: false, antialias: false, preserveDrawingBuffer: false };
+let gl = canvas.getContext('webgl2', glOpts);
+const isGL2 = !!gl;
+if (!gl) gl = canvas.getContext('webgl', glOpts) || canvas.getContext('experimental-webgl', glOpts);
+if (!gl) { document.body.style.color = '#fff'; document.body.textContent = 'WebGL bu tarayıcıda desteklenmiyor.'; throw new Error('no webgl'); }
+
+let internalFormat, texType, filterLinear = true;
+if (isGL2) {
+  gl.getExtension('EXT_color_buffer_float');
+  gl.getExtension('EXT_color_buffer_half_float');
+  internalFormat = gl.RGBA16F; texType = gl.HALF_FLOAT;
+} else {
+  const hf = gl.getExtension('OES_texture_half_float');
+  gl.getExtension('EXT_color_buffer_half_float');
+  filterLinear = !!gl.getExtension('OES_texture_half_float_linear');
+  internalFormat = gl.RGBA; texType = hf ? hf.HALF_FLOAT_OES : gl.UNSIGNED_BYTE;
+}
+const LIN = filterLinear ? gl.LINEAR : gl.NEAREST;
+
+// ---------- Shader'lar ----------
+const VS = `
+precision highp float;
+attribute vec2 aPosition;
+uniform vec2 texelSize;
+varying vec2 vUv, vL, vR, vT, vB;
+void main() {
+  vUv = aPosition * 0.5 + 0.5;
+  vL = vUv - vec2(texelSize.x, 0.0); vR = vUv + vec2(texelSize.x, 0.0);
+  vT = vUv + vec2(0.0, texelSize.y); vB = vUv - vec2(0.0, texelSize.y);
+  gl_Position = vec4(aPosition, 0.0, 1.0);
+}`;
+const FH = 'precision highp float; precision highp sampler2D; varying vec2 vUv, vL, vR, vT, vB;\n';
+
+const FS = {
+  splat: FH + `uniform sampler2D uTarget; uniform float aspect, radius; uniform vec3 color; uniform vec2 point;
+    void main() {
+      vec2 p = vUv - point; p.x *= aspect;
+      gl_FragColor = vec4(texture2D(uTarget, vUv).xyz + exp(-dot(p, p) / radius) * color, 1.0);
+    }`,
+  advection: FH + `uniform sampler2D uVelocity, uSource; uniform vec2 texelSize; uniform float dt, dissipation;
+    void main() {
+      vec2 coord = vUv - dt * texture2D(uVelocity, vUv).xy * texelSize;
+      gl_FragColor = texture2D(uSource, coord) / (1.0 + dissipation * dt);
+    }`,
+  divergence: FH + `uniform sampler2D uVelocity;
+    void main() {
+      float L = texture2D(uVelocity, vL).x, R = texture2D(uVelocity, vR).x;
+      float T = texture2D(uVelocity, vT).y, B = texture2D(uVelocity, vB).y;
+      vec2 C = texture2D(uVelocity, vUv).xy;
+      if (vL.x < 0.0) L = -C.x; if (vR.x > 1.0) R = -C.x;
+      if (vT.y > 1.0) T = -C.y; if (vB.y < 0.0) B = -C.y;
+      gl_FragColor = vec4(0.5 * (R - L + T - B), 0.0, 0.0, 1.0);
+    }`,
+  curl: FH + `uniform sampler2D uVelocity;
+    void main() {
+      float L = texture2D(uVelocity, vL).y, R = texture2D(uVelocity, vR).y;
+      float T = texture2D(uVelocity, vT).x, B = texture2D(uVelocity, vB).x;
+      gl_FragColor = vec4(0.5 * (R - L - T + B), 0.0, 0.0, 1.0);
+    }`,
+  vorticity: FH + `uniform sampler2D uVelocity, uCurl; uniform float curl, dt;
+    void main() {
+      float L = texture2D(uCurl, vL).x, R = texture2D(uCurl, vR).x;
+      float T = texture2D(uCurl, vT).x, B = texture2D(uCurl, vB).x, C = texture2D(uCurl, vUv).x;
+      vec2 force = 0.5 * vec2(abs(T) - abs(B), abs(R) - abs(L));
+      force /= length(force) + 0.0001; force *= curl * C; force.y *= -1.0;
+      vec2 v = texture2D(uVelocity, vUv).xy + force * dt;
+      gl_FragColor = vec4(clamp(v, -1000.0, 1000.0), 0.0, 1.0);
+    }`,
+  pressure: FH + `uniform sampler2D uPressure, uDivergence;
+    void main() {
+      float L = texture2D(uPressure, vL).x, R = texture2D(uPressure, vR).x;
+      float T = texture2D(uPressure, vT).x, B = texture2D(uPressure, vB).x;
+      gl_FragColor = vec4((L + R + B + T - texture2D(uDivergence, vUv).x) * 0.25, 0.0, 0.0, 1.0);
+    }`,
+  gradient: FH + `uniform sampler2D uPressure, uVelocity;
+    void main() {
+      float L = texture2D(uPressure, vL).x, R = texture2D(uPressure, vR).x;
+      float T = texture2D(uPressure, vT).x, B = texture2D(uPressure, vB).x;
+      vec2 v = texture2D(uVelocity, vUv).xy - vec2(R - L, T - B);
+      gl_FragColor = vec4(v, 0.0, 1.0);
+    }`,
+  clear: FH + `uniform sampler2D uTexture; uniform float value;
+    void main() { gl_FragColor = value * texture2D(uTexture, vUv); }`,
+  display: FH + `uniform sampler2D uTexture, uVelocity; uniform vec2 texelSize, res; uniform float uTheme, cell, aspect, uTime;
+    vec3 tone(vec3 c) { return 1.0 - exp(-c * 1.6); }   // yumuşak tonlama
+    float lum(vec3 c) { return dot(c, vec3(0.299, 0.587, 0.114)); }
+    vec3 dyeAt(vec2 p) { return tone(texture2D(uTexture, p).rgb); }
+    void main() {
+      int t = int(uTheme + 0.5);
+      vec2 uv = vUv, fc = vUv * res;
+      if (t == 7) {                                        // Kaleydoskop
+        vec2 p = uv - 0.5; p.x *= aspect;
+        float seg = 1.0471976, an = atan(p.y, p.x), r = length(p);
+        an = abs(mod(an, seg) - seg * 0.5);
+        p = vec2(cos(an), sin(an)) * r; p.x /= aspect; uv = p + 0.5;
+      }
+      vec3 c = dyeAt(uv); float l = lum(c); vec3 o = c;
+      if (t == 1) {                                        // Noktalar (halftone)
+        vec2 g = fc / cell, f = fract(g) - 0.5;
+        vec3 cc = dyeAt((floor(g) + 0.5) * cell / res);
+        float r = sqrt(lum(cc)) * 0.78;
+        o = cc * smoothstep(r, r - 0.12, length(f)) * 1.3;
+      } else if (t == 2) {                                 // Çizgiler
+        float y = fc.y / cell, f = abs(fract(y) - 0.5) * 2.0;
+        vec3 cc = dyeAt(vec2(vUv.x, (floor(y) + 0.5) * cell / res.y));
+        float th = clamp(lum(cc) * 1.8, 0.0, 1.0);
+        o = cc * smoothstep(th, th - 0.2, f) * 1.3;
+      } else if (t == 3) {                                 // Piksel mozaik
+        vec2 g = fc / cell, f = fract(g);
+        o = dyeAt((floor(g) + 0.5) * cell / res) * step(0.08, min(f.x, f.y));
+      } else if (t == 4) {                                 // Kontur (topografik)
+        float k = smoothstep(0.38, 0.5, abs(fract(l * 9.0) - 0.5));
+        o = c * (0.12 + 1.6 * k) * step(0.02, l);
+      } else if (t == 5) {                                 // Neon hat
+        float e = length(vec2(lum(tone(texture2D(uTexture, vR).rgb)) - lum(tone(texture2D(uTexture, vL).rgb)),
+                              lum(tone(texture2D(uTexture, vT).rgb)) - lum(tone(texture2D(uTexture, vB).rgb))));
+        vec3 hc = c / max(max(c.r, max(c.g, c.b)), 0.001);
+        o = hc * clamp(e * 14.0, 0.0, 1.0) + c * 0.06;
+      } else if (t == 6) {                                 // Akış çizgileri
+        vec2 v = texture2D(uVelocity, vUv).xy; float sp = length(v);
+        vec2 d = sp > 0.01 ? v / sp : vec2(1.0, 0.0), n = vec2(-d.y, d.x);
+        float f = abs(fract(dot(fc, n) / cell) - 0.5) * 2.0, th = clamp(l * 1.8, 0.0, 1.0);
+        o = c * smoothstep(th, th - 0.2, f) * 1.3;
+      } else if (t == 8) {                                 // Termal kamera
+        float h = clamp(l * 1.4, 0.0, 1.0);
+        o = mix(mix(vec3(0.0, 0.0, 0.25), vec3(0.85, 0.0, 0.55), smoothstep(0.0, 0.35, h)),
+                mix(vec3(1.0, 0.6, 0.0), vec3(1.0, 1.0, 0.85), smoothstep(0.6, 1.0, h)), smoothstep(0.3, 0.7, h));
+      } else if (t == 9) {                                 // Cam / kromatik sapma
+        vec2 v = texture2D(uVelocity, vUv).xy;
+        vec2 d = (vUv - 0.5) * 0.02 + v * 0.0004;
+        o = vec3(dyeAt(uv + d).r, dyeAt(uv).g, dyeAt(uv - d).b) * 1.15;
+      } else if (t == 10) {                                // Mürekkep (açık zemin)
+        o = vec3(1.0) - clamp(c, 0.0, 1.0) * 0.92;
+      } else if (t == 11) {                                // Parçacık izleri
+        vec2 v = texture2D(uVelocity, uv).xy;
+        float sp = length(v);
+        vec2 dir = sp > 0.001 ? v / sp : vec2(0.0);
+        vec3 trail = vec3(0.0);
+        float weight = 0.0;
+        for (int i = 0; i < 7; i++) {
+          float fi = float(i);
+          vec2 q = uv - dir * fi * texelSize * 7.0;
+          q = clamp(q, 0.001, 0.999);
+          vec3 s = dyeAt(q);
+          float w = exp(-fi * 0.62);
+          trail += s * w;
+          weight += w;
+        }
+        trail /= max(weight, 0.001);
+        float pulse = 0.75 + 0.25 * sin(uTime * 2.2 + lum(trail) * 9.0);
+        float grain = fract(sin(dot(fc + uTime * 14.0, vec2(12.9898, 78.233))) * 43758.5453);
+        float particles = smoothstep(0.72, 0.96, grain) * clamp(sp * 5.0, 0.0, 1.0);
+        o = trail * (0.35 + 0.95 * particles) * pulse + c * 0.16;
+      } else if (t == 12) {                                // Aurora
+        vec2 v = texture2D(uVelocity, uv).xy;
+        float sp = clamp(length(v) * 4.0, 0.0, 1.0);
+        float wave = 0.5 + 0.5 * sin((uv.x * 7.0 + uv.y * 4.0) + uTime * 0.45 + l * 8.0);
+        vec3 a = mix(vec3(0.08, 0.85, 0.95), vec3(0.75, 0.12, 1.0), wave);
+        vec3 glow = a * (0.18 + 1.35 * l) * (0.55 + 0.75 * sp);
+        o = glow + c * 0.22;
+      }
+      gl_FragColor = vec4(o, 1.0);
+    }`,
+};
+
+function compile(type, src) {
+  const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(s));
+  return s;
+}
+const vs = compile(gl.VERTEX_SHADER, VS);
+function program(fsSrc) {
+  const p = gl.createProgram();
+  gl.attachShader(p, vs); gl.attachShader(p, compile(gl.FRAGMENT_SHADER, fsSrc));
+  gl.bindAttribLocation(p, 0, 'aPosition'); gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) console.error(gl.getProgramInfoLog(p));
+  const u = {};
+  for (let i = 0, n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS); i < n; i++) {
+    const name = gl.getActiveUniform(p, i).name; u[name] = gl.getUniformLocation(p, name);
+  }
+  return { p, u };
+}
+const P = {}; for (const k in FS) P[k] = program(FS[k]);
+
+// Tam ekran dörtgen
+gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
+gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+
+function blit(target) {
+  if (target) { gl.viewport(0, 0, target.w, target.h); gl.bindFramebuffer(gl.FRAMEBUFFER, target.fbo); }
+  else { gl.viewport(0, 0, canvas.width, canvas.height); gl.bindFramebuffer(gl.FRAMEBUFFER, null); }
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+}
+
+// ---------- Framebuffer'lar ----------
+function createFBO(w, h, filter) {
+  gl.activeTexture(gl.TEXTURE0);
+  const tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filter);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filter);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texImage2D(gl.TEXTURE_2D, 0, internalFormat, w, h, 0, gl.RGBA, texType, null);
+  const fbo = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+  gl.viewport(0, 0, w, h); gl.clearColor(0, 0, 0, 1); gl.clear(gl.COLOR_BUFFER_BIT);
+  return { tex, fbo, w, h, tx: 1 / w, ty: 1 / h };
+}
+function createDouble(w, h, filter) {
+  const d = { read: createFBO(w, h, filter), write: createFBO(w, h, filter), swap() { const t = this.read; this.read = this.write; this.write = t; } };
+  return d;
+}
+function getRes(res) {
+  let a = canvas.width / canvas.height; if (a < 1) a = 1 / a;
+  const min = Math.round(res), max = Math.round(res * a);
+  return canvas.width > canvas.height ? { w: max, h: min } : { w: min, h: max };
+}
+
+let velocity, dye, divergence, curlFBO, pressure;
+function initFramebuffers() {
+  const sim = getRes(QUALITY[cfg.quality]);
+  const dyeR = getRes(QUALITY[cfg.quality] * (isMobile ? 4 : 5));
+  velocity = createDouble(sim.w, sim.h, LIN);
+  dye = createDouble(dyeR.w, dyeR.h, LIN);
+  divergence = createFBO(sim.w, sim.h, gl.NEAREST);
+  curlFBO = createFBO(sim.w, sim.h, gl.NEAREST);
+  pressure = createDouble(sim.w, sim.h, gl.NEAREST);
+}
+
+function bind(unit, fbo) { gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, fbo.tex); return unit; }
+function use(pr, texel) { gl.useProgram(pr.p); if (texel) gl.uniform2f(pr.u.texelSize, texel.tx, texel.ty); return pr.u; }
+
+// ---------- Simülasyon adımı ----------
+function step(dt) {
+  gl.disable(gl.BLEND);
+  let u = use(P.curl, velocity.read);
+  gl.uniform1i(u.uVelocity, bind(0, velocity.read)); blit(curlFBO);
+
+  u = use(P.vorticity, velocity.read);
+  gl.uniform1i(u.uVelocity, bind(0, velocity.read)); gl.uniform1i(u.uCurl, bind(1, curlFBO));
+  gl.uniform1f(u.curl, cfg.curl); gl.uniform1f(u.dt, dt);
+  blit(velocity.write); velocity.swap();
+
+  u = use(P.divergence, velocity.read);
+  gl.uniform1i(u.uVelocity, bind(0, velocity.read)); blit(divergence);
+
+  u = use(P.clear, pressure.read);
+  gl.uniform1i(u.uTexture, bind(0, pressure.read)); gl.uniform1f(u.value, 0.8);
+  blit(pressure.write); pressure.swap();
+
+  u = use(P.pressure, velocity.read);
+  gl.uniform1i(u.uDivergence, bind(0, divergence));
+  for (let i = 0; i < cfg.pressureIters; i++) {
+    gl.uniform1i(u.uPressure, bind(1, pressure.read)); blit(pressure.write); pressure.swap();
+  }
+
+  u = use(P.gradient, velocity.read);
+  gl.uniform1i(u.uPressure, bind(0, pressure.read)); gl.uniform1i(u.uVelocity, bind(1, velocity.read));
+  blit(velocity.write); velocity.swap();
+
+  u = use(P.advection, velocity.read);
+  gl.uniform1i(u.uVelocity, bind(0, velocity.read)); gl.uniform1i(u.uSource, 0);
+  gl.uniform1f(u.dt, dt); gl.uniform1f(u.dissipation, 0.2);
+  blit(velocity.write); velocity.swap();
+
+  u = use(P.advection, velocity.read);
+  gl.uniform1i(u.uVelocity, bind(0, velocity.read)); gl.uniform1i(u.uSource, bind(1, dye.read));
+  gl.uniform1f(u.dt, dt); gl.uniform1f(u.dissipation, cfg.dissipation);
+  blit(dye.write); dye.swap();
+}
+
+function render() {
+  gl.disable(gl.BLEND);
+  const u = use(P.display, dye.read);
+  gl.uniform1i(u.uTexture, bind(0, dye.read)); gl.uniform1i(u.uVelocity, bind(1, velocity.read));
+  gl.uniform1f(u.uTheme, Math.max(0, THEMES.indexOf(cfg.theme)));
+  gl.uniform1f(u.cell, cfg.pattern * canvas.width / canvas.clientWidth);
+  gl.uniform2f(u.res, canvas.width, canvas.height);
+  gl.uniform1f(u.aspect, canvas.width / canvas.height); gl.uniform1f(u.uTime, performance.now() * 0.001);
+  blit(null);
+}
+
+// ---------- Splat ----------
+function splat(x, y, dx, dy, color) {
+  const aspect = canvas.width / canvas.height;
+  let r = cfg.splatRadius / 100; if (aspect > 1) r *= aspect;
+  let u = use(P.splat, velocity.read);
+  gl.uniform1i(u.uTarget, bind(0, velocity.read)); gl.uniform1f(u.aspect, aspect);
+  gl.uniform2f(u.point, x, y); gl.uniform3f(u.color, dx, dy, 0); gl.uniform1f(u.radius, r);
+  blit(velocity.write); velocity.swap();
+  u = use(P.splat, dye.read);
+  gl.uniform1i(u.uTarget, bind(0, dye.read)); gl.uniform3f(u.color, color[0], color[1], color[2]);
+  blit(dye.write); dye.swap();
+}
+
+// ---------- Renkler ----------
+function hsv(h, s, v) {
+  const i = Math.floor(h * 6), f = h * 6 - i, p = v * (1 - s), q = v * (1 - f * s), t = v * (1 - (1 - f) * s);
+  return [[v, t, p], [q, v, p], [p, v, t], [p, q, v], [t, p, v], [v, p, q]][i % 6];
+}
+const NEON = [0.88, 0.83, 0.5, 0.45, 0.33, 0.95, 0.72]; // magenta, mor-pembe, camgöbeği, turkuaz, yeşil, pembe, mavi-mor
+let hue = Math.random();
+function pickColor(intensity) {
+  let c;
+  if (cfg.colorMode === 'Gökkuşağı') { hue = (hue + 0.006) % 1; c = hsv(hue, 1, 1); }
+  else if (cfg.colorMode === 'Neon') { c = hsv(NEON[(Math.random() * NEON.length) | 0], 1, 1); }
+  else { const n = parseInt(cfg.color.slice(1), 16); c = [(n >> 16) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255]; }
+  const k = 0.12 + 0.35 * intensity;   // hızlı hareket = daha parlak iz
+  return [c[0] * k, c[1] * k, c[2] * k];
+}
+
+// ---------- Girdi (fare + dokunma) ----------
+const pointers = new Map();
+const keyOf = e => (e.pointerType === 'mouse' ? 'mouse' : e.pointerId);
+function coords(e) { const r = canvas.getBoundingClientRect(); return [(e.clientX - r.left) / r.width, 1 - (e.clientY - r.top) / r.height]; }
+canvas.addEventListener('pointerdown', e => {
+  canvas.setPointerCapture(e.pointerId);
+  const [x, y] = coords(e); pointers.set(keyOf(e), { x, y });
+  splat(x, y, (Math.random() - 0.5) * 800, (Math.random() - 0.5) * 800, pickColor(1).map(v => v * 1.6));
+});
+canvas.addEventListener('pointermove', e => {
+  const k = keyOf(e), [x, y] = coords(e);
+  const p = pointers.get(k);
+  if (!p) { if (k === 'mouse') pointers.set(k, { x, y }); return; } // dokunmada yalnızca basılıyken
+  const aspect = canvas.width / canvas.height;
+  let dx = x - p.x, dy = y - p.y;
+  if (aspect < 1) dx *= aspect; if (aspect > 1) dy /= aspect;
+  if (dx || dy) splat(x, y, dx * 6000, dy * 6000, pickColor(Math.min(1, Math.hypot(dx, dy) * 40)));
+  p.x = x; p.y = y;
+});
+const end = e => pointers.delete(keyOf(e));
+canvas.addEventListener('pointerup', end); canvas.addEventListener('pointercancel', end);
+canvas.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') pointers.delete('mouse'); });
+
+  // ---------- Çok dilli arayüz ----------
+  const LANGS = ['en','zh','hi','es','fr','ar','bn','pt','ru','id','tr'];
+  const LANGUAGE_NAMES = { en:'English', zh:'中文', hi:'हिन्दी', es:'Español', fr:'Français', ar:'العربية', bn:'বাংলা', pt:'Português', ru:'Русский', id:'Bahasa Indonesia', tr:'Türkçe' };
+  const I18N = {
+    en:{ title:'Fluid Simulation', brandSub:'Shape the flow with touch', appearance:'Appearance', flowMotion:'Flow & Motion', quality:'Quality', qualityHint:'Starts high', rainbow:'Rainbow', neon:'Neon', single:'Single color', customColor:'Custom color', pattern:'Pattern size', speed:'Simulation speed', curl:'Vortex', radius:'Trail thickness', dissipation:'Dissipation', low:'Low', medium:'Medium', high:'High', reset:'↺ Reset', shortcuts:'H hide/show · T theme · F fullscreen', hideControls:'Hide controls', openControls:'Open controls', fullscreen:'Fullscreen', exitFullscreen:'Exit fullscreen', language:'Language', hud:(theme,q)=>`${theme} • ${q} quality • H: Controls` },
+    zh:{ title:'流体模拟', brandSub:'触摸塑造流动', appearance:'外观', flowMotion:'流动与运动', quality:'画质', qualityHint:'默认高画质', rainbow:'彩虹', neon:'霓虹', single:'单色', customColor:'自定义颜色', pattern:'图案大小', speed:'模拟速度', curl:'涡流', radius:'轨迹粗细', dissipation:'消散', low:'低', medium:'中', high:'高', reset:'↺ 重置', shortcuts:'H 隐藏/显示 · T 切换主题 · F 全屏', hideControls:'隐藏控制', openControls:'打开控制', fullscreen:'全屏', exitFullscreen:'退出全屏', language:'语言', hud:(theme,q)=>`${theme} • ${q} 画质 • H：控制` },
+    hi:{ title:'द्रव सिमुलेशन', brandSub:'स्पर्श से प्रवाह को आकार दें', appearance:'दृश्य', flowMotion:'प्रवाह और गति', quality:'गुणवत्ता', qualityHint:'डिफ़ॉल्ट: उच्च', rainbow:'इंद्रधनुष', neon:'नियॉन', single:'एक रंग', customColor:'कस्टम रंग', pattern:'पैटर्न आकार', speed:'सिमुलेशन गति', curl:'भंवर', radius:'ट्रेल मोटाई', dissipation:'क्षय', low:'कम', medium:'मध्यम', high:'उच्च', reset:'↺ रीसेट', shortcuts:'H छिपाएँ/दिखाएँ · T थीम · F फ़ुलस्क्रीन', hideControls:'कंट्रोल छिपाएँ', openControls:'कंट्रोल खोलें', fullscreen:'फ़ुलस्क्रीन', exitFullscreen:'फ़ुलस्क्रीन से बाहर', language:'भाषा', hud:(theme,q)=>`${theme} • ${q} गुणवत्ता • H: कंट्रोल` },
+    es:{ title:'Simulación de fluidos', brandSub:'Moldea el flujo con el tacto', appearance:'Apariencia', flowMotion:'Flujo y movimiento', quality:'Calidad', qualityHint:'Inicio: alta', rainbow:'Arcoíris', neon:'Neón', single:'Un color', customColor:'Color personalizado', pattern:'Tamaño del patrón', speed:'Velocidad', curl:'Remolino', radius:'Grosor de estela', dissipation:'Disipación', low:'Baja', medium:'Media', high:'Alta', reset:'↺ Restablecer', shortcuts:'H ocultar/mostrar · T tema · F pantalla completa', hideControls:'Ocultar controles', openControls:'Abrir controles', fullscreen:'Pantalla completa', exitFullscreen:'Salir de pantalla completa', language:'Idioma', hud:(theme,q)=>`${theme} • Calidad ${q} • H: controles` },
+    fr:{ title:'Simulation de fluides', brandSub:'Façonnez le flux au toucher', appearance:'Apparence', flowMotion:'Flux et mouvement', quality:'Qualité', qualityHint:'Démarrage : élevée', rainbow:'Arc-en-ciel', neon:'Néon', single:'Couleur unique', customColor:'Couleur personnalisée', pattern:'Taille du motif', speed:'Vitesse de simulation', curl:'Tourbillon', radius:'Épaisseur de la traînée', dissipation:'Dissipation', low:'Faible', medium:'Moyenne', high:'Élevée', reset:'↺ Réinitialiser', shortcuts:'H masquer/afficher · T thème · F plein écran', hideControls:'Masquer les contrôles', openControls:'Ouvrir les contrôles', fullscreen:'Plein écran', exitFullscreen:'Quitter le plein écran', language:'Langue', hud:(theme,q)=>`${theme} • Qualité ${q} • H : contrôles` },
+    ar:{ title:'محاكاة السوائل', brandSub:'شكّل التدفق باللمس', appearance:'المظهر', flowMotion:'التدفق والحركة', quality:'الجودة', qualityHint:'البدء: عالية', rainbow:'قوس قزح', neon:'نيون', single:'لون واحد', customColor:'لون مخصص', pattern:'حجم النمط', speed:'سرعة المحاكاة', curl:'دوامة', radius:'سُمك الأثر', dissipation:'التلاشي', low:'منخفضة', medium:'متوسطة', high:'عالية', reset:'↺ إعادة ضبط', shortcuts:'H إخفاء/إظهار · T تبديل النمط · F ملء الشاشة', hideControls:'إخفاء عناصر التحكم', openControls:'فتح عناصر التحكم', fullscreen:'ملء الشاشة', exitFullscreen:'الخروج من ملء الشاشة', language:'اللغة', hud:(theme,q)=>`${theme} • الجودة ${q} • H: التحكم` },
+    bn:{ title:'ফ্লুইড সিমুলেশন', brandSub:'স্পর্শে প্রবাহকে আকার দিন', appearance:'দৃশ্য', flowMotion:'প্রবাহ ও গতি', quality:'গুণমান', qualityHint:'শুরু: উচ্চ', rainbow:'রেইনবো', neon:'নিয়ন', single:'এক রঙ', customColor:'কাস্টম রঙ', pattern:'প্যাটার্নের আকার', speed:'সিমুলেশন গতি', curl:'ঘূর্ণি', radius:'ট্রেইলের পুরুত্ব', dissipation:'ক্ষয়', low:'নিম্ন', medium:'মাঝারি', high:'উচ্চ', reset:'↺ রিসেট', shortcuts:'H লুকান/দেখান · T থিম · F ফুলস্ক্রিন', hideControls:'কন্ট্রোল লুকান', openControls:'কন্ট্রোল খুলুন', fullscreen:'ফুলস্ক্রিন', exitFullscreen:'ফুলস্ক্রিন থেকে বের হন', language:'ভাষা', hud:(theme,q)=>`${theme} • ${q} মান • H: কন্ট্রোল` },
+    pt:{ title:'Simulação de fluidos', brandSub:'Modele o fluxo com o toque', appearance:'Aparência', flowMotion:'Fluxo e movimento', quality:'Qualidade', qualityHint:'Início: alta', rainbow:'Arco-íris', neon:'Neon', single:'Uma cor', customColor:'Cor personalizada', pattern:'Tamanho do padrão', speed:'Velocidade da simulação', curl:'Vórtice', radius:'Espessura do rastro', dissipation:'Dissipação', low:'Baixa', medium:'Média', high:'Alta', reset:'↺ Redefinir', shortcuts:'H ocultar/mostrar · T tema · F tela cheia', hideControls:'Ocultar controles', openControls:'Abrir controles', fullscreen:'Tela cheia', exitFullscreen:'Sair da tela cheia', language:'Idioma', hud:(theme,q)=>`${theme} • Qualidade ${q} • H: controles` },
+    ru:{ title:'Симуляция жидкости', brandSub:'Формируйте поток касанием', appearance:'Вид', flowMotion:'Поток и движение', quality:'Качество', qualityHint:'Старт: высокое', rainbow:'Радуга', neon:'Неон', single:'Один цвет', customColor:'Свой цвет', pattern:'Размер узора', speed:'Скорость симуляции', curl:'Вихрь', radius:'Толщина следа', dissipation:'Затухание', low:'Низкое', medium:'Среднее', high:'Высокое', reset:'↺ Сбросить', shortcuts:'H скрыть/показать · T тема · F полный экран', hideControls:'Скрыть управление', openControls:'Открыть управление', fullscreen:'Полный экран', exitFullscreen:'Выйти из полного экрана', language:'Язык', hud:(theme,q)=>`${theme} • Качество: ${q} • H: управление` },
+    id:{ title:'Simulasi Fluida', brandSub:'Bentuk aliran dengan sentuhan', appearance:'Tampilan', flowMotion:'Aliran & Gerakan', quality:'Kualitas', qualityHint:'Mulai: tinggi', rainbow:'Pelangi', neon:'Neon', single:'Satu warna', customColor:'Warna kustom', pattern:'Ukuran pola', speed:'Kecepatan simulasi', curl:'Pusaran', radius:'Ketebalan jejak', dissipation:'Pelemahan', low:'Rendah', medium:'Sedang', high:'Tinggi', reset:'↺ Atur ulang', shortcuts:'H sembunyikan/tampilkan · T tema · F layar penuh', hideControls:'Sembunyikan kontrol', openControls:'Buka kontrol', fullscreen:'Layar penuh', exitFullscreen:'Keluar layar penuh', language:'Bahasa', hud:(theme,q)=>`${theme} • Kualitas ${q} • H: kontrol` },
+    tr:{ title:'Akışkan Simülasyonu', brandSub:'Akışı dokunarak şekillendir', appearance:'Görünüm', flowMotion:'Akış & Hareket', quality:'Kalite', qualityHint:'Başlangıç: Yüksek', rainbow:'Gökkuşağı', neon:'Neon', single:'Tek renk', customColor:'Özel renk', pattern:'Desen boyutu', speed:'Simülasyon hızı', curl:'Girdap', radius:'İz kalınlığı', dissipation:'Sönme', low:'Düşük', medium:'Orta', high:'Yüksek', reset:'↺ Sıfırla', shortcuts:'H gizle/göster · T tema · F tam ekran', hideControls:'Kontrolleri gizle', openControls:'Kontrolleri aç', fullscreen:'Tam ekran', exitFullscreen:'Tam ekrandan çık', language:'Dil', hud:(theme,q)=>`${theme} • ${q} kalite • H: Kontroller` }
+  };
+  const THEME_LABELS = {
+    en:{'Duman':'Smoke','Noktalar':'Dots','Çizgiler':'Lines','Piksel':'Pixel','Kontur':'Contour','Neon Hat':'Neon Lines','Akış Çizgileri':'Flow Lines','Kaleydoskop':'Kaleidoscope','Termal':'Thermal','Cam':'Glass','Mürekkep':'Ink','Parçacık İzleri':'Particle Trails','Aurora':'Aurora'},
+    zh:{'Duman':'烟雾','Noktalar':'点','Çizgiler':'线条','Piksel':'像素','Kontur':'轮廓','Neon Hat':'霓虹线','Akış Çizgileri':'流线','Kaleydoskop':'万花筒','Termal':'热成像','Cam':'玻璃','Mürekkep':'墨水','Parçacık İzleri':'粒子轨迹','Aurora':'极光'},
+    hi:{'Duman':'धुआँ','Noktalar':'बिंदु','Çizgiler':'रेखाएँ','Piksel':'पिक्सेल','Kontur':'कॉन्टूर','Neon Hat':'नियॉन रेखाएँ','Akış Çizgileri':'प्रवाह रेखाएँ','Kaleydoskop':'कैलिडोस्कोप','Termal':'थर्मल','Cam':'काँच','Mürekkep':'स्याही','Parçacık İzleri':'कण ट्रेल','Aurora':'ऑरोरा'},
+    es:{'Duman':'Humo','Noktalar':'Puntos','Çizgiler':'Líneas','Piksel':'Píxel','Kontur':'Contorno','Neon Hat':'Líneas neón','Akış Çizgileri':'Líneas de flujo','Kaleydoskop':'Caleidoscopio','Termal':'Térmico','Cam':'Cristal','Mürekkep':'Tinta','Parçacık İzleri':'Estelas de partículas','Aurora':'Aurora'},
+    fr:{'Duman':'Fumée','Noktalar':'Points','Çizgiler':'Lignes','Piksel':'Pixel','Kontur':'Contour','Neon Hat':'Lignes néon','Akış Çizgileri':'Lignes de flux','Kaleydoskop':'Kaléidoscope','Termal':'Thermique','Cam':'Verre','Mürekkep':'Encre','Parçacık İzleri':'Traînées de particules','Aurora':'Aurore'},
+    ar:{'Duman':'دخان','Noktalar':'نقاط','Çizgiler':'خطوط','Piksel':'بكسل','Kontur':'حدود','Neon Hat':'خطوط نيون','Akış Çizgileri':'خطوط التدفق','Kaleydoskop':'مشهد كاليدوسكوب','Termal':'حراري','Cam':'زجاج','Mürekkep':'حبر','Parçacık İzleri':'آثار الجسيمات','Aurora':'الشفق القطبي'},
+    bn:{'Duman':'ধোঁয়া','Noktalar':'বিন্দু','Çizgiler':'রেখা','Piksel':'পিক্সেল','Kontur':'কনট্যুর','Neon Hat':'নিয়ন রেখা','Akış Çizgileri':'প্রবাহ রেখা','Kaleydoskop':'ক্যালাইডোস্কোপ','Termal':'থার্মাল','Cam':'কাচ','Mürekkep':'কালি','Parçacık İzleri':'কণার ট্রেইল','Aurora':'অরোরা'},
+    pt:{'Duman':'Fumaça','Noktalar':'Pontos','Çizgiler':'Linhas','Piksel':'Pixel','Kontur':'Contorno','Neon Hat':'Linhas neon','Akış Çizgileri':'Linhas de fluxo','Kaleydoskop':'Caleidoscópio','Termal':'Térmico','Cam':'Vidro','Mürekkep':'Tinta','Parçacık İzleri':'Rastros de partículas','Aurora':'Aurora'},
+    ru:{'Duman':'Дым','Noktalar':'Точки','Çizgiler':'Линии','Piksel':'Пиксели','Kontur':'Контур','Neon Hat':'Неоновые линии','Akış Çizgileri':'Линии потока','Kaleydoskop':'Калейдоскоп','Termal':'Тепловизор','Cam':'Стекло','Mürekkep':'Чернила','Parçacık İzleri':'Следы частиц','Aurora':'Северное сияние'},
+    id:{'Duman':'Asap','Noktalar':'Titik','Çizgiler':'Garis','Piksel':'Piksel','Kontur':'Kontur','Neon Hat':'Garis Neon','Akış Çizgileri':'Garis Aliran','Kaleydoskop':'Kaleidoskop','Termal':'Termal','Cam':'Kaca','Mürekkep':'Tinta','Parçacık İzleri':'Jejak Partikel','Aurora':'Aurora'},
+    tr:{'Duman':'Duman','Noktalar':'Noktalar','Çizgiler':'Çizgiler','Piksel':'Piksel','Kontur':'Kontur','Neon Hat':'Neon Hat','Akış Çizgileri':'Akış Çizgileri','Kaleydoskop':'Kaleydoskop','Termal':'Termal','Cam':'Cam','Mürekkep':'Mürekkep','Parçacık İzleri':'Parçacık İzleri','Aurora':'Aurora'}
+  };
+  // ---------- Modern kontrol paneli ----------
+  const guiVisibleDefault = true;
+  let guiVisible = guiVisibleDefault;
+  const hudText = document.getElementById('hudText');
+  const controlPanel = document.getElementById('controlPanel');
+  const controlToggle = document.getElementById('controlToggle');
+  const closeControls = document.getElementById('closeControls');
+  const themeGrid = document.getElementById('themeGrid');
+  const themeHint = document.getElementById('themeHint');
+  const colorInput = document.getElementById('colorInput');
+  const colorHex = document.getElementById('colorHex');
+
+  const languageSelect = document.getElementById('languageSelect');
+  let currentLanguage = (localStorage.getItem('fluidStudioLanguage') || 'en');
+  if (!LANGS.includes(currentLanguage)) currentLanguage = 'en';
+  LANGS.forEach(code => {
+    const opt = document.createElement('option');
+    opt.value = code; opt.textContent = LANGUAGE_NAMES[code];
+    languageSelect.appendChild(opt);
+  });
+
+  THEMES.forEach(theme => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'themeBtn';
+    btn.dataset.theme = theme;
+    btn.setAttribute('role', 'option');
+    btn.innerHTML = `<span class="themeSwatch"></span><span class="themeLabel"></span>`;
+    btn.addEventListener('click', () => {
+      cfg.theme = theme;
+      syncUi();
+    });
+    themeGrid.appendChild(btn);
+  });
+
+  const ranges = {
+    pattern: ['patternRange','patternValue', v => String(v)],
+    speed: ['speedRange','speedValue', v => Number(v).toFixed(2)],
+    curl: ['curlRange','curlValue', v => String(v)],
+    splatRadius: ['radiusRange','radiusValue', v => Number(v).toFixed(2)],
+    dissipation: ['dissipationRange','dissipationValue', v => Number(v).toFixed(2)]
+  };
+
+  function syncRange(key) {
+    const [inputId, valueId, fmt] = ranges[key];
+    const input = document.getElementById(inputId);
+    const value = document.getElementById(valueId);
+    input.value = cfg[key]; value.textContent = fmt(cfg[key]);
+  }
+  Object.keys(ranges).forEach(key => {
+    const [inputId] = ranges[key];
+    document.getElementById(inputId).addEventListener('input', e => {
+      cfg[key] = Number(e.target.value); syncRange(key);
+    });
+    syncRange(key);
+  });
+
+  function setColorMode(mode) {
+    cfg.colorMode = mode;
+    document.querySelectorAll('[data-color]').forEach(btn => btn.classList.toggle('active', btn.dataset.color === mode));
+  }
+  document.querySelectorAll('[data-color]').forEach(btn => btn.addEventListener('click', () => setColorMode(btn.dataset.color)));
+
+  colorInput.addEventListener('input', () => { cfg.color = colorInput.value; colorHex.textContent = cfg.color.toUpperCase(); });
+  document.querySelectorAll('[data-quality]').forEach(btn => btn.addEventListener('click', () => {
+    cfg.quality = btn.dataset.quality; document.querySelectorAll('[data-quality]').forEach(b => b.classList.toggle('active', b === btn)); initFramebuffers();
+  }));
+
+  function applyLanguage(code) {
+    currentLanguage = LANGS.includes(code) ? code : 'en';
+    const t = I18N[currentLanguage];
+    document.documentElement.lang = currentLanguage;
+    document.documentElement.dir = currentLanguage === 'ar' ? 'rtl' : 'ltr';
+    document.title = t.title;
+    languageSelect.value = currentLanguage;
+    document.getElementById('brandSub').textContent = t.brandSub;
+    document.getElementById('appearanceLabel').textContent = t.appearance;
+    document.getElementById('flowMotionLabel').textContent = t.flowMotion;
+    document.getElementById('qualityLabel').textContent = t.quality;
+    document.getElementById('qualityHint').textContent = t.qualityHint;
+    document.getElementById('customColorLabel').textContent = t.customColor;
+    document.getElementById('colorRainbow').textContent = t.rainbow;
+    document.getElementById('colorNeon').textContent = t.neon;
+    document.getElementById('colorSingle').textContent = t.single;
+    document.getElementById('label-pattern').textContent = t.pattern;
+    document.getElementById('label-speed').textContent = t.speed;
+    document.getElementById('label-curl').textContent = t.curl;
+    document.getElementById('label-radius').textContent = t.radius;
+    document.getElementById('label-dissipation').textContent = t.dissipation;
+    document.getElementById('qualityLow').textContent = t.low;
+    document.getElementById('qualityMedium').textContent = t.medium;
+    document.getElementById('qualityHigh').textContent = t.high;
+    document.getElementById('resetBtn').textContent = t.reset;
+    document.getElementById('shortcutText').textContent = t.shortcuts;
+    document.getElementById('closeControls').setAttribute('aria-label', t.hideControls);
+    document.getElementById('closeControls').title = t.hideControls;
+    colorInput.setAttribute('aria-label', t.customColor);
+    languageSelect.setAttribute('aria-label', t.language);
+    syncFullscreenIcon();
+    syncUi();
+    localStorage.setItem('fluidStudioLanguage', currentLanguage);
+  }
+
+  function syncUi() {
+    const t = I18N[currentLanguage];
+    themeHint.textContent = THEME_LABELS[currentLanguage][cfg.theme] || cfg.theme;
+    document.querySelectorAll('.themeBtn').forEach(btn => {
+      const active = btn.dataset.theme === cfg.theme;
+      btn.querySelector('.themeLabel').textContent = THEME_LABELS[currentLanguage][btn.dataset.theme] || btn.dataset.theme;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-selected', String(active));
+    });
+    colorInput.value = cfg.color; colorHex.textContent = cfg.color.toUpperCase();
+    setColorMode(cfg.colorMode);
+    Object.keys(ranges).forEach(syncRange);
+    document.querySelectorAll('[data-quality]').forEach(btn => btn.classList.toggle('active', btn.dataset.quality === cfg.quality));
+    updateHud();
+  }
+  function updateHud() { const t = I18N[currentLanguage]; hudText.textContent = t.hud(THEME_LABELS[currentLanguage][cfg.theme] || cfg.theme, t[{ 'Düşük':'low', 'Orta':'medium', 'Yüksek':'high' }[cfg.quality]]); }
+
+  function setControlsVisible(show) {
+    guiVisible = !!show;
+    controlPanel.classList.toggle('hidden', !guiVisible);
+    controlToggle.classList.toggle('hidden', guiVisible);
+    const t = I18N[currentLanguage];
+    controlToggle.setAttribute('aria-label', guiVisible ? t.hideControls : t.openControls);
+    controlToggle.title = guiVisible ? t.hideControls : t.openControls;
+  }
+  controlToggle.addEventListener('click', () => setControlsVisible(true));
+  closeControls.addEventListener('click', () => setControlsVisible(false));
+
+  languageSelect.addEventListener('change', () => applyLanguage(languageSelect.value));
+
+  const DEFAULTS = { theme:'Duman', pattern:12, colorMode:'Gökkuşağı', color:'#00ffd0', speed:1, quality:'Yüksek', curl:25, splatRadius:0.25, dissipation:0.9 };
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    Object.assign(cfg, DEFAULTS); initFramebuffers(); syncUi();
+  });
+
+  // ---------- Tam ekran ----------
+  const fsButton = document.getElementById('fullscreenBtn');
+  const fsIcon = document.getElementById('fsIcon');
+  async function toggleFullscreen() {
+    try {
+      if (!document.fullscreenElement) await document.documentElement.requestFullscreen?.();
+      else await document.exitFullscreen?.();
+    } catch (err) { console.warn('Tam ekran kullanılamadı:', err); }
+  }
+  function syncFullscreenIcon() {
+    const full = !!document.fullscreenElement;
+    const t = I18N[currentLanguage];
+    fsButton.title = full ? t.exitFullscreen : t.fullscreen;
+    fsButton.setAttribute('aria-label', full ? t.exitFullscreen : t.fullscreen);
+    fsIcon.innerHTML = full
+      ? '<path d="M9 3v5a1 1 0 0 1-1 1H3M15 3v5a1 1 0 0 0 1 1h5M9 21v-5a1 1 0 0 0-1-1H3M15 21v-5a1 1 0 0 0 1-1h5"/>'
+      : '<path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/>';
+  }
+  fsButton.addEventListener('click', toggleFullscreen);
+  function syncViewport() {
+    const w = Math.max(1, Math.floor((document.fullscreenElement ? window.innerWidth : document.documentElement.clientWidth) * (window.devicePixelRatio || 1)));
+    const h = Math.max(1, Math.floor((document.fullscreenElement ? window.innerHeight : document.documentElement.clientHeight) * (window.devicePixelRatio || 1)));
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w; canvas.height = h;
+      initFramebuffers();
+    }
+  }
+  document.addEventListener('fullscreenchange', () => {
+    syncFullscreenIcon();
+    requestAnimationFrame(() => requestAnimationFrame(syncViewport));
+  });
+  window.addEventListener('resize', () => requestAnimationFrame(syncViewport), {passive:true});
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', () => requestAnimationFrame(syncViewport), {passive:true});
+  syncFullscreenIcon();
+
+  applyLanguage(currentLanguage);
+
+  addEventListener('keydown', e => {
+    const tag = document.activeElement?.tagName;
+    if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+    if (e.key.toLowerCase() === 't') {
+      cfg.theme = THEMES[(THEMES.indexOf(cfg.theme) + 1) % THEMES.length]; syncUi();
+    }
+    if (e.key.toLowerCase() === 'h') setControlsVisible(!guiVisible);
+    if (e.key.toLowerCase() === 'f') toggleFullscreen();
+  });
+
+// ---------- Ana döngü ----------
+function resize() {
+  const dpr = Math.min(window.devicePixelRatio || 1, isMobile ? 1.5 : 2);
+  const cssW = document.fullscreenElement ? window.innerWidth : document.documentElement.clientWidth;
+  const cssH = document.fullscreenElement ? window.innerHeight : document.documentElement.clientHeight;
+  const w = Math.max(1, Math.floor(cssW * dpr));
+  const h = Math.max(1, Math.floor(cssH * dpr));
+  if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; return true; }
+  return false;
+}
+resize(); initFramebuffers();
+for (let i = 0; i < 5; i++) {
+  splat(Math.random(), Math.random(), (Math.random() - 0.5) * 1500, (Math.random() - 0.5) * 1500, pickColor(1).map(v => v * 2));
+}
+
+let last = performance.now();
+(function frame(now) {
+  const dt = Math.min((now - last) / 1000, 0.016666) * cfg.speed; last = now;
+  if (resize()) initFramebuffers();
+  step(dt); render();
+  requestAnimationFrame(frame);
+})(last);
+</script>
+</body>
+</html>
