@@ -4,10 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <!-- Google AdSense Code -->
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3489647774176512"
-       crossorigin="anonymous"></script>
-  
+<meta name="description" content="Interactive WebGL fluid simulation with Smoke, Water, Fire, Air, Plasma, Galaxy and more.">
 <title>Fluid Simulation</title>
 <style>
   html, body { margin: 0; width: 100%; height: 100%; min-height: 100%; background: #000; overflow: hidden; overscroll-behavior: none; }
@@ -74,6 +71,13 @@
   .rangeName { font-size:12px; font-weight:650; color:rgba(255,255,255,.82); }
   .rangeValue { min-width:46px; text-align:right; color:var(--accent); font-size:11px; font-weight:800; font-variant-numeric:tabular-nums; }
   input[type=range] { width:100%; accent-color:var(--accent); }
+  .bgPresets { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:7px; }
+  .bgBtn { min-width:0; border:1px solid rgba(255,255,255,.08); border-radius:12px; background:rgba(255,255,255,.045); color:rgba(255,255,255,.60); padding:9px 5px; cursor:pointer; font:700 10px/1.1 inherit; display:flex; flex-direction:column; align-items:center; gap:6px; transition:.16s ease; }
+  .bgBtn:hover { transform:translateY(-1px); background:rgba(255,255,255,.09); color:#fff; }
+  .bgBtn.active { color:#fff; border-color:rgba(142,246,218,.30); background:rgba(142,246,218,.08); }
+  .bgSwatch { width:18px; height:18px; border-radius:50%; display:block; border:1px solid rgba(255,255,255,.18); box-shadow:0 3px 10px rgba(0,0,0,.18); }
+  .bgBlack { background:#000; } .bgMidnight { background:#07101f; } .bgDeepBlue { background:#041a2a; } .bgWhite { background:#f4f7fb; border-color:rgba(0,0,0,.16); }
+
   .qualityGrid { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; }
   .qualityBtn { border:1px solid rgba(255,255,255,.08); border-radius:12px; background:rgba(255,255,255,.045); color:rgba(255,255,255,.56); padding:10px 6px; cursor:pointer; font:700 11px inherit; }
   .qualityBtn.active { color:white; border-color:rgba(142,246,218,.32); background:rgba(142,246,218,.1); box-shadow:0 0 0 1px rgba(142,246,218,.06), inset 0 0 18px rgba(142,246,218,.05); }
@@ -115,21 +119,149 @@
   #fullscreenBtn:active { transform: scale(.96); }
   #fullscreenBtn svg { width: 20px; height: 20px; }
 
+  #shotBtn {
+    position: fixed; right: 68px; bottom: max(14px, env(safe-area-inset-bottom)); z-index: 21;
+    width: 46px; height: 46px; border: 1px solid rgba(255,255,255,.14);
+    border-radius: 14px; background: rgba(8,12,20,.46); color: white;
+    display: grid; place-items: center; cursor: pointer;
+    backdrop-filter: blur(14px) saturate(135%); -webkit-backdrop-filter: blur(14px) saturate(135%);
+    box-shadow: 0 10px 30px rgba(0,0,0,.22); transition: transform .18s ease, background .18s ease;
+  }
+  #shotBtn:hover { transform: translateY(-2px); background: rgba(255,255,255,.12); }
+  #shotBtn:active { transform: scale(.96); }
+  #shotBtn svg { width: 20px; height: 20px; }
+  #shotBtn.flash { animation: shotFlash .35s ease; }
+  @keyframes shotFlash { 0% { box-shadow: 0 0 0 0 rgba(255,255,255,.9), 0 10px 30px rgba(0,0,0,.22); } 100% { box-shadow: 0 0 0 22px rgba(255,255,255,0), 0 10px 30px rgba(0,0,0,.22); } }
+  body.recording #shotBtn { opacity: 0 !important; pointer-events: none !important; visibility: hidden !important; }
+
+  #hintTip {
+    position: fixed; left: 50%; bottom: max(76px, calc(env(safe-area-inset-bottom) + 76px)); z-index: 22;
+    transform: translateX(-50%) translateY(6px); opacity: 0; pointer-events: none;
+    padding: 10px 16px; border-radius: 999px; white-space: nowrap;
+    background: rgba(8,12,20,.55); border: 1px solid rgba(255,255,255,.12);
+    backdrop-filter: blur(14px) saturate(135%); -webkit-backdrop-filter: blur(14px) saturate(135%);
+    color: rgba(255,255,255,.88); font: 600 12px/1.2 Inter, ui-sans-serif, system-ui, sans-serif;
+    box-shadow: 0 10px 30px rgba(0,0,0,.22); transition: opacity .5s ease, transform .5s ease;
+  }
+  #hintTip.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  #toast {
+    position: fixed; left: 50%; top: max(76px, calc(env(safe-area-inset-top) + 76px)); z-index: 60;
+    transform: translateX(-50%) translateY(-6px); opacity: 0; pointer-events: none;
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 16px; border-radius: 999px; white-space: nowrap;
+    background: rgba(8,12,20,.62); border: 1px solid rgba(255,255,255,.14);
+    backdrop-filter: blur(14px) saturate(135%); -webkit-backdrop-filter: blur(14px) saturate(135%);
+    color: rgba(255,255,255,.92); font: 700 12px/1.2 Inter, ui-sans-serif, system-ui, sans-serif;
+    box-shadow: 0 10px 30px rgba(0,0,0,.28); transition: opacity .28s ease, transform .28s ease;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  #toast .toastDot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); flex: 0 0 auto; }
+  #toast.rec .toastDot { background: #ff4b4b; box-shadow: 0 0 8px #ff4b4b; animation: recBlink 1s infinite; }
+  @keyframes recBlink { 0%,100% { opacity: 1; } 50% { opacity: .25; } }
+  @media (max-width: 700px) {
+    #toast { top: max(66px, calc(env(safe-area-inset-top) + 66px)); font-size: 11px; padding: 9px 14px; max-width: calc(100vw - 24px); }
+  }
+
   @media (max-width: 700px) {
     #controlPanel { top:max(8px, env(safe-area-inset-top)); right:8px; width:min(330px, calc(100vw - 16px)); max-height:calc(100dvh - 16px); border-radius:19px; }
     #controlToggle { top:max(9px, env(safe-area-inset-top)); right:9px; width:44px; height:44px; }
+    .bgPresets { grid-template-columns:repeat(2, minmax(0,1fr)); }
     #hud { left:9px; bottom:max(9px, env(safe-area-inset-bottom)); padding:9px 10px; }
     #fullscreenBtn { right:9px; bottom:max(9px, env(safe-area-inset-bottom)); width:44px; height:44px; }
+    #shotBtn { right: 60px; bottom: max(9px, env(safe-area-inset-bottom)); width: 44px; height: 44px; }
+    #hintTip { bottom: max(66px, calc(env(safe-area-inset-bottom) + 66px)); font-size: 11px; padding: 9px 14px; max-width: calc(100vw - 24px); white-space: normal; text-align: center; }
+  }
+
+  /* ---------- Buy Me a Coffee ---------- */
+  #coffeeBtn {
+    position: fixed; left: 16px; top: max(16px, env(safe-area-inset-top)); z-index: 25;
+    display: flex; align-items: center; gap: 8px;
+    height: 44px; padding: 0 14px 0 12px; border-radius: 14px;
+    border: 1px solid rgba(255,255,255,.14);
+    background: linear-gradient(135deg, #ffdd57, #ffb347);
+    color: #241a05; font: 800 12px/1 Inter, ui-sans-serif, system-ui, sans-serif;
+    text-decoration: none; cursor: pointer;
+    box-shadow: 0 12px 30px rgba(255,180,60,.25), 0 2px 8px rgba(0,0,0,.2);
+    transition: transform .18s ease, box-shadow .18s ease;
+  }
+  #coffeeBtn:hover { transform: translateY(-2px); box-shadow: 0 16px 36px rgba(255,180,60,.35), 0 2px 8px rgba(0,0,0,.22); }
+  #coffeeBtn:active { transform: translateY(0) scale(.97); }
+  #coffeeBtn svg { width: 18px; height: 18px; flex: 0 0 auto; }
+  @media (max-width: 700px) {
+    #coffeeBtn { left: 9px; top: max(9px, env(safe-area-inset-top)); height: 40px; padding: 0 11px 0 9px; }
+    #coffeeBtn span.coffeeLabel { display: none; }
+  }
+
+  /* ---------- Duyarlı tasarım: tüm cihazlar ---------- */
+  /* Tabletler (dikey/yatay, ör. iPad) */
+  @media (min-width: 701px) and (max-width: 1024px) {
+    #controlPanel { width: min(380px, calc(100vw - 32px)); max-height: min(820px, calc(100dvh - 32px)); }
+    .themeGrid { max-height: 260px; }
+  }
+
+  /* Küçük telefonlar (ör. iPhone SE, eski Android) */
+  @media (max-width: 380px) {
+    #controlPanel { padding: 11px; border-radius: 16px; }
+    .brandTitle { font-size: 13px; }
+    .brandSub { font-size: 10px; }
+    .languagePicker select { max-width: 54px; }
+    .themeGrid { grid-template-columns: repeat(2, minmax(0,1fr)); max-height: 190px; }
+    .qualityGrid, .segmented { gap: 5px; }
+    .bgPresets { gap: 5px; }
+    #hud { font-size: 11px; padding: 8px 9px; gap: 6px; }
+    #hud span:not(.dot) { max-width: 46vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #coffeeBtn span.coffeeLabel { display: none; }
+    #coffeeBtn { padding: 0 10px; }
+    .shortcut { display: none; }
+  }
+
+  /* Yatay mod / kısa ekran yükseklikleri (telefon landscape) */
+  @media (max-height: 480px) and (orientation: landscape) {
+    #controlPanel { top: max(6px, env(safe-area-inset-top)); max-height: calc(100dvh - 12px); padding: 10px; }
+    #controlPanel .panelSection { padding: 8px 0; }
+    .themeGrid { max-height: 130px; }
+    #controlToggle, #fullscreenBtn, #shotBtn { width: 40px; height: 40px; }
+    #coffeeBtn { height: 36px; }
+    #hud { padding: 7px 9px; }
+    #hintTip { bottom: max(52px, calc(env(safe-area-inset-bottom) + 52px)); }
+  }
+
+  /* Büyük ekranlar / geniş masaüstü monitörleri */
+  @media (min-width: 1600px) {
+    #controlPanel { width: min(400px, calc(100vw - 32px)); }
+  }
+
+  /* Dokunmatik cihazlarda hover efektlerini devre dışı bırak (tıklama sonrası takılı kalan stil olmasın) */
+  @media (hover: none) {
+    .iconBtn:hover, .themeBtn:hover, .bgBtn:hover, #controlToggle:hover,
+    #fullscreenBtn:hover, #shotBtn:hover, #coffeeBtn:hover { transform: none; }
+  }
+
+  /* Tüm etkileşimli öğelerde dokunma gecikmesini kaldır */
+  button, a, input[type=range], .themeBtn, .bgBtn, .qualityBtn, .segmented button {
+    touch-action: manipulation;
+  }
+
+  /* ---------- Kayıt modu ---------- */
+  body.recording, body.recording canvas { cursor: none !important; }
+  body.recording #controlPanel, body.recording #controlToggle,
+  body.recording #hud, body.recording #fullscreenBtn, body.recording #coffeeBtn, body.recording #hintTip {
+    opacity: 0 !important; pointer-events: none !important; visibility: hidden !important;
   }
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
+<a id="coffeeBtn" href="https://www.buymeacoffee.com/KULLANICI_ADIN" target="_blank" rel="noopener noreferrer" aria-label="Buy me a coffee" title="Buy me a coffee">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" y1="2" x2="6" y2="4"/><line x1="10" y1="2" x2="10" y2="4"/><line x1="14" y1="2" x2="14" y2="4"/></svg>
+  <span class="coffeeLabel">Buy me a coffee</span>
+</a>
 <div id="hud"><span class="dot"></span><span id="hudText">Smoke • High quality • H: Controls</span></div>
 <button id="controlToggle" type="button" aria-label="Open controls" title="Open controls">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10M14 4v6M8 14v6"/></svg>
 </button>
-<section id="controlPanel" aria-label="Fluid controls">
+<section id="controlPanel" class="hidden" aria-label="Fluid controls">
   <div class="panelHead">
     <div class="brand"><div class="brandIcon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 15c3-4 5-8 8-8 3 0 4 4 8 0M4 19c4-3 6-5 9-5 2 0 4 1 7-1"/></svg></div><div><div class="brandTitle">FLUID STUDIO</div><div class="brandSub" id="brandSub">Shape the flow with touch</div></div></div>
     <div class="headActions">
@@ -142,6 +274,16 @@
     <div class="themeGrid" id="themeGrid" role="listbox" aria-label="Tema seç"></div>
     <div class="segmented" style="margin-top:9px"><button type="button" data-color="Gökkuşağı" id="colorRainbow">Rainbow</button><button type="button" data-color="Neon" id="colorNeon">Neon</button><button type="button" data-color="Tek Renk" id="colorSingle">Single color</button></div>
     <div class="colorRow"><div class="colorInfo"><strong id="customColorLabel">Custom color</strong><span id="colorHex">#00ffd0</span></div><input id="colorInput" type="color" value="#00ffd0" aria-label="Custom color"></div>
+  </div>
+  <div class="panelSection">
+    <div class="sectionTitle"><span id="backgroundLabel">Background</span><span class="sectionHint" id="backgroundHint">Canvas atmosphere</span></div>
+    <div class="bgPresets" id="bgPresets">
+      <button type="button" class="bgBtn" data-bg="#000000"><span class="bgSwatch bgBlack"></span><span id="bgBlackText">Black</span></button>
+      <button type="button" class="bgBtn" data-bg="#07101f"><span class="bgSwatch bgMidnight"></span><span id="bgMidnightText">Midnight</span></button>
+      <button type="button" class="bgBtn" data-bg="#041a2a"><span class="bgSwatch bgDeepBlue"></span><span id="bgDeepBlueText">Deep blue</span></button>
+      <button type="button" class="bgBtn" data-bg="#f4f7fb"><span class="bgSwatch bgWhite"></span><span id="bgWhiteText">White</span></button>
+    </div>
+    <div class="colorRow"><div class="colorInfo"><strong id="backgroundColorLabel">Custom background</strong><span id="backgroundHex">#05070D</span></div><input id="backgroundInput" type="color" value="#05070d" aria-label="Custom background"></div>
   </div>
   <div class="panelSection">
     <div class="sectionTitle" id="flowMotionLabel">Flow & Motion</div>
@@ -162,6 +304,14 @@
     <path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/>
   </svg>
 </button>
+<button id="shotBtn" type="button" aria-label="Save screenshot (S)" title="Save screenshot (S)">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 8a2 2 0 0 1 2-2h1.5l1-1.5h7l1 1.5H18a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/>
+    <circle cx="12" cy="13" r="3.5"/>
+  </svg>
+</button>
+<div id="hintTip"></div>
+<div id="toast"><span class="toastDot"></span><span id="toastText"></span></div>
 <script>
 'use strict';
 const canvas = document.getElementById('c');
@@ -169,12 +319,13 @@ const isMobile = /Android|iPhone|iPad|iPod|Mobi/i.test(navigator.userAgent) || i
 
 // ---------- Ayarlar ----------
 const QUALITY = { 'Düşük': 64, 'Orta': 128, 'Yüksek': 256 };
-const THEMES = ['Duman', 'Noktalar', 'Çizgiler', 'Piksel', 'Kontur', 'Neon Hat', 'Akış Çizgileri', 'Kaleydoskop', 'Termal', 'Cam', 'Mürekkep', 'Parçacık İzleri', 'Aurora'];
+const THEMES = ['Duman', 'Noktalar', 'Çizgiler', 'Piksel', 'Kontur', 'Neon Hat', 'Akış Çizgileri', 'Ayna', 'Termal', 'Cam', 'Mürekkep', 'Parçacık İzleri', 'Aurora', 'Su', 'Hava', 'Plazma'];
 const cfg = {
   theme: 'Duman',
   pattern: 12,
   colorMode: 'Gökkuşağı',
   color: '#00ffd0',
+  background: '#05070d',
   speed: 1,
   quality: 'Yüksek',
   curl: 25,
@@ -184,7 +335,7 @@ const cfg = {
 };
 
 // ---------- WebGL kurulumu ----------
-const glOpts = { alpha: false, depth: false, stencil: false, antialias: false, preserveDrawingBuffer: false };
+const glOpts = { alpha: false, depth: false, stencil: false, antialias: false, preserveDrawingBuffer: true };
 let gl = canvas.getContext('webgl2', glOpts);
 const isGL2 = !!gl;
 if (!gl) gl = canvas.getContext('webgl', glOpts) || canvas.getContext('experimental-webgl', glOpts);
@@ -267,20 +418,22 @@ const FS = {
     }`,
   clear: FH + `uniform sampler2D uTexture; uniform float value;
     void main() { gl_FragColor = value * texture2D(uTexture, vUv); }`,
-  display: FH + `uniform sampler2D uTexture, uVelocity; uniform vec2 texelSize, res; uniform float uTheme, cell, aspect, uTime;
+  display: FH + `uniform sampler2D uTexture, uVelocity; uniform vec2 texelSize, res; uniform float uTheme, cell, aspect, uTime; uniform vec3 uBackground;
     vec3 tone(vec3 c) { return 1.0 - exp(-c * 1.6); }   // yumuşak tonlama
     float lum(vec3 c) { return dot(c, vec3(0.299, 0.587, 0.114)); }
     vec3 dyeAt(vec2 p) { return tone(texture2D(uTexture, p).rgb); }
     void main() {
       int t = int(uTheme + 0.5);
       vec2 uv = vUv, fc = vUv * res;
-      if (t == 7) {                                        // Kaleydoskop
-        vec2 p = uv - 0.5; p.x *= aspect;
-        float seg = 1.0471976, an = atan(p.y, p.x), r = length(p);
-        an = abs(mod(an, seg) - seg * 0.5);
-        p = vec2(cos(an), sin(an)) * r; p.x /= aspect; uv = p + 0.5;
+      vec3 c;
+      if (t == 7) {                                        // Ayna (mirror) — her iki taraf da birbirine yansır
+        vec3 cA = dyeAt(uv);
+        vec3 cB = dyeAt(vec2(1.0 - uv.x, uv.y));
+        c = max(cA, cB);
+      } else {
+        c = dyeAt(uv);
       }
-      vec3 c = dyeAt(uv); float l = lum(c); vec3 o = c;
+      float l = lum(c); vec3 o = c;
       if (t == 1) {                                        // Noktalar (halftone)
         vec2 g = fc / cell, f = fract(g) - 0.5;
         vec3 cc = dyeAt((floor(g) + 0.5) * cell / res);
@@ -344,7 +497,29 @@ const FS = {
         vec3 a = mix(vec3(0.08, 0.85, 0.95), vec3(0.75, 0.12, 1.0), wave);
         vec3 glow = a * (0.18 + 1.35 * l) * (0.55 + 0.75 * sp);
         o = glow + c * 0.22;
+      } else if (t == 13) {                                // Water
+        vec2 v = texture2D(uVelocity, uv).xy;
+        float sp = clamp(length(v) * 3.2, 0.0, 1.0);
+        float ripple = 0.5 + 0.5 * sin(uv.x * 34.0 + uv.y * 17.0 + uTime * 1.15 + l * 11.0);
+        float shine = smoothstep(0.55, 1.0, ripple) * (0.2 + l * 0.9);
+        vec3 water = mix(vec3(0.005, 0.05, 0.12), vec3(0.0, 0.52, 0.82), clamp(l * 1.65 + sp * 0.18, 0.0, 1.0));
+        o = water + vec3(0.18, 0.72, 1.0) * shine * 0.52 + c * 0.10;
+      } else if (t == 14) {                                // Air
+        vec2 v = texture2D(uVelocity, uv).xy;
+        float sp = length(v);
+        float mist = 0.5 + 0.5 * sin(uv.x * 18.0 - uv.y * 12.0 + uTime * 0.75 + sp * 6.0);
+        float strength = clamp(l * 1.45 + sp * 0.055, 0.0, 1.0);
+        vec3 air = mix(vec3(0.24, 0.34, 0.48), vec3(0.74, 0.95, 1.0), mist);
+        o = air * strength * (0.35 + 1.15 * mist) + c * 0.06;
+      } else if (t == 15) {                                // Plasma
+        vec2 v = texture2D(uVelocity, uv).xy;
+        float sp = clamp(length(v) * 3.0, 0.0, 1.0);
+        float pulse = 0.5 + 0.5 * sin(uv.x * 10.0 + uv.y * 8.0 + uTime * 1.25 + l * 10.0);
+        vec3 p = mix(vec3(0.02, 0.88, 1.0), vec3(1.0, 0.08, 0.72), pulse);
+        o = p * (0.18 + 1.55 * l + 0.35 * sp) + c * 0.08;
       }
+      float bgStrength = clamp(l * 1.55 + length(o) * 0.08, 0.0, 1.0);
+      o = mix(uBackground, o, bgStrength);
       gl_FragColor = vec4(o, 1.0);
     }`,
 };
@@ -463,7 +638,10 @@ function render() {
   gl.uniform1f(u.uTheme, Math.max(0, THEMES.indexOf(cfg.theme)));
   gl.uniform1f(u.cell, cfg.pattern * canvas.width / canvas.clientWidth);
   gl.uniform2f(u.res, canvas.width, canvas.height);
-  gl.uniform1f(u.aspect, canvas.width / canvas.height); gl.uniform1f(u.uTime, performance.now() * 0.001);
+  gl.uniform1f(u.aspect, canvas.width / canvas.height);
+  const bgN = parseInt(cfg.background.slice(1), 16);
+  gl.uniform3f(u.uBackground, ((bgN >> 16) & 255) / 255, ((bgN >> 8) & 255) / 255, (bgN & 255) / 255);
+  gl.uniform1f(u.uTime, performance.now() * 0.001);
   blit(null);
 }
 
@@ -523,33 +701,33 @@ canvas.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') po
   const LANGS = ['en','zh','hi','es','fr','ar','bn','pt','ru','id','tr'];
   const LANGUAGE_NAMES = { en:'English', zh:'中文', hi:'हिन्दी', es:'Español', fr:'Français', ar:'العربية', bn:'বাংলা', pt:'Português', ru:'Русский', id:'Bahasa Indonesia', tr:'Türkçe' };
   const I18N = {
-    en:{ title:'Fluid Simulation', brandSub:'Shape the flow with touch', appearance:'Appearance', flowMotion:'Flow & Motion', quality:'Quality', qualityHint:'Starts high', rainbow:'Rainbow', neon:'Neon', single:'Single color', customColor:'Custom color', pattern:'Pattern size', speed:'Simulation speed', curl:'Vortex', radius:'Trail thickness', dissipation:'Dissipation', low:'Low', medium:'Medium', high:'High', reset:'↺ Reset', shortcuts:'H hide/show · T theme · F fullscreen', hideControls:'Hide controls', openControls:'Open controls', fullscreen:'Fullscreen', exitFullscreen:'Exit fullscreen', language:'Language', hud:(theme,q)=>`${theme} • ${q} quality • H: Controls` },
-    zh:{ title:'流体模拟', brandSub:'触摸塑造流动', appearance:'外观', flowMotion:'流动与运动', quality:'画质', qualityHint:'默认高画质', rainbow:'彩虹', neon:'霓虹', single:'单色', customColor:'自定义颜色', pattern:'图案大小', speed:'模拟速度', curl:'涡流', radius:'轨迹粗细', dissipation:'消散', low:'低', medium:'中', high:'高', reset:'↺ 重置', shortcuts:'H 隐藏/显示 · T 切换主题 · F 全屏', hideControls:'隐藏控制', openControls:'打开控制', fullscreen:'全屏', exitFullscreen:'退出全屏', language:'语言', hud:(theme,q)=>`${theme} • ${q} 画质 • H：控制` },
-    hi:{ title:'द्रव सिमुलेशन', brandSub:'स्पर्श से प्रवाह को आकार दें', appearance:'दृश्य', flowMotion:'प्रवाह और गति', quality:'गुणवत्ता', qualityHint:'डिफ़ॉल्ट: उच्च', rainbow:'इंद्रधनुष', neon:'नियॉन', single:'एक रंग', customColor:'कस्टम रंग', pattern:'पैटर्न आकार', speed:'सिमुलेशन गति', curl:'भंवर', radius:'ट्रेल मोटाई', dissipation:'क्षय', low:'कम', medium:'मध्यम', high:'उच्च', reset:'↺ रीसेट', shortcuts:'H छिपाएँ/दिखाएँ · T थीम · F फ़ुलस्क्रीन', hideControls:'कंट्रोल छिपाएँ', openControls:'कंट्रोल खोलें', fullscreen:'फ़ुलस्क्रीन', exitFullscreen:'फ़ुलस्क्रीन से बाहर', language:'भाषा', hud:(theme,q)=>`${theme} • ${q} गुणवत्ता • H: कंट्रोल` },
-    es:{ title:'Simulación de fluidos', brandSub:'Moldea el flujo con el tacto', appearance:'Apariencia', flowMotion:'Flujo y movimiento', quality:'Calidad', qualityHint:'Inicio: alta', rainbow:'Arcoíris', neon:'Neón', single:'Un color', customColor:'Color personalizado', pattern:'Tamaño del patrón', speed:'Velocidad', curl:'Remolino', radius:'Grosor de estela', dissipation:'Disipación', low:'Baja', medium:'Media', high:'Alta', reset:'↺ Restablecer', shortcuts:'H ocultar/mostrar · T tema · F pantalla completa', hideControls:'Ocultar controles', openControls:'Abrir controles', fullscreen:'Pantalla completa', exitFullscreen:'Salir de pantalla completa', language:'Idioma', hud:(theme,q)=>`${theme} • Calidad ${q} • H: controles` },
-    fr:{ title:'Simulation de fluides', brandSub:'Façonnez le flux au toucher', appearance:'Apparence', flowMotion:'Flux et mouvement', quality:'Qualité', qualityHint:'Démarrage : élevée', rainbow:'Arc-en-ciel', neon:'Néon', single:'Couleur unique', customColor:'Couleur personnalisée', pattern:'Taille du motif', speed:'Vitesse de simulation', curl:'Tourbillon', radius:'Épaisseur de la traînée', dissipation:'Dissipation', low:'Faible', medium:'Moyenne', high:'Élevée', reset:'↺ Réinitialiser', shortcuts:'H masquer/afficher · T thème · F plein écran', hideControls:'Masquer les contrôles', openControls:'Ouvrir les contrôles', fullscreen:'Plein écran', exitFullscreen:'Quitter le plein écran', language:'Langue', hud:(theme,q)=>`${theme} • Qualité ${q} • H : contrôles` },
-    ar:{ title:'محاكاة السوائل', brandSub:'شكّل التدفق باللمس', appearance:'المظهر', flowMotion:'التدفق والحركة', quality:'الجودة', qualityHint:'البدء: عالية', rainbow:'قوس قزح', neon:'نيون', single:'لون واحد', customColor:'لون مخصص', pattern:'حجم النمط', speed:'سرعة المحاكاة', curl:'دوامة', radius:'سُمك الأثر', dissipation:'التلاشي', low:'منخفضة', medium:'متوسطة', high:'عالية', reset:'↺ إعادة ضبط', shortcuts:'H إخفاء/إظهار · T تبديل النمط · F ملء الشاشة', hideControls:'إخفاء عناصر التحكم', openControls:'فتح عناصر التحكم', fullscreen:'ملء الشاشة', exitFullscreen:'الخروج من ملء الشاشة', language:'اللغة', hud:(theme,q)=>`${theme} • الجودة ${q} • H: التحكم` },
-    bn:{ title:'ফ্লুইড সিমুলেশন', brandSub:'স্পর্শে প্রবাহকে আকার দিন', appearance:'দৃশ্য', flowMotion:'প্রবাহ ও গতি', quality:'গুণমান', qualityHint:'শুরু: উচ্চ', rainbow:'রেইনবো', neon:'নিয়ন', single:'এক রঙ', customColor:'কাস্টম রঙ', pattern:'প্যাটার্নের আকার', speed:'সিমুলেশন গতি', curl:'ঘূর্ণি', radius:'ট্রেইলের পুরুত্ব', dissipation:'ক্ষয়', low:'নিম্ন', medium:'মাঝারি', high:'উচ্চ', reset:'↺ রিসেট', shortcuts:'H লুকান/দেখান · T থিম · F ফুলস্ক্রিন', hideControls:'কন্ট্রোল লুকান', openControls:'কন্ট্রোল খুলুন', fullscreen:'ফুলস্ক্রিন', exitFullscreen:'ফুলস্ক্রিন থেকে বের হন', language:'ভাষা', hud:(theme,q)=>`${theme} • ${q} মান • H: কন্ট্রোল` },
-    pt:{ title:'Simulação de fluidos', brandSub:'Modele o fluxo com o toque', appearance:'Aparência', flowMotion:'Fluxo e movimento', quality:'Qualidade', qualityHint:'Início: alta', rainbow:'Arco-íris', neon:'Neon', single:'Uma cor', customColor:'Cor personalizada', pattern:'Tamanho do padrão', speed:'Velocidade da simulação', curl:'Vórtice', radius:'Espessura do rastro', dissipation:'Dissipação', low:'Baixa', medium:'Média', high:'Alta', reset:'↺ Redefinir', shortcuts:'H ocultar/mostrar · T tema · F tela cheia', hideControls:'Ocultar controles', openControls:'Abrir controles', fullscreen:'Tela cheia', exitFullscreen:'Sair da tela cheia', language:'Idioma', hud:(theme,q)=>`${theme} • Qualidade ${q} • H: controles` },
-    ru:{ title:'Симуляция жидкости', brandSub:'Формируйте поток касанием', appearance:'Вид', flowMotion:'Поток и движение', quality:'Качество', qualityHint:'Старт: высокое', rainbow:'Радуга', neon:'Неон', single:'Один цвет', customColor:'Свой цвет', pattern:'Размер узора', speed:'Скорость симуляции', curl:'Вихрь', radius:'Толщина следа', dissipation:'Затухание', low:'Низкое', medium:'Среднее', high:'Высокое', reset:'↺ Сбросить', shortcuts:'H скрыть/показать · T тема · F полный экран', hideControls:'Скрыть управление', openControls:'Открыть управление', fullscreen:'Полный экран', exitFullscreen:'Выйти из полного экрана', language:'Язык', hud:(theme,q)=>`${theme} • Качество: ${q} • H: управление` },
-    id:{ title:'Simulasi Fluida', brandSub:'Bentuk aliran dengan sentuhan', appearance:'Tampilan', flowMotion:'Aliran & Gerakan', quality:'Kualitas', qualityHint:'Mulai: tinggi', rainbow:'Pelangi', neon:'Neon', single:'Satu warna', customColor:'Warna kustom', pattern:'Ukuran pola', speed:'Kecepatan simulasi', curl:'Pusaran', radius:'Ketebalan jejak', dissipation:'Pelemahan', low:'Rendah', medium:'Sedang', high:'Tinggi', reset:'↺ Atur ulang', shortcuts:'H sembunyikan/tampilkan · T tema · F layar penuh', hideControls:'Sembunyikan kontrol', openControls:'Buka kontrol', fullscreen:'Layar penuh', exitFullscreen:'Keluar layar penuh', language:'Bahasa', hud:(theme,q)=>`${theme} • Kualitas ${q} • H: kontrol` },
-    tr:{ title:'Akışkan Simülasyonu', brandSub:'Akışı dokunarak şekillendir', appearance:'Görünüm', flowMotion:'Akış & Hareket', quality:'Kalite', qualityHint:'Başlangıç: Yüksek', rainbow:'Gökkuşağı', neon:'Neon', single:'Tek renk', customColor:'Özel renk', pattern:'Desen boyutu', speed:'Simülasyon hızı', curl:'Girdap', radius:'İz kalınlığı', dissipation:'Sönme', low:'Düşük', medium:'Orta', high:'Yüksek', reset:'↺ Sıfırla', shortcuts:'H gizle/göster · T tema · F tam ekran', hideControls:'Kontrolleri gizle', openControls:'Kontrolleri aç', fullscreen:'Tam ekran', exitFullscreen:'Tam ekrandan çık', language:'Dil', hud:(theme,q)=>`${theme} • ${q} kalite • H: Kontroller` }
+    en:{ title:'Fluid Simulation', brandSub:'Shape the flow with touch', appearance:'Appearance', flowMotion:'Flow & Motion', quality:'Quality', qualityHint:'Starts high', rainbow:'Rainbow', neon:'Neon', single:'Single color', customColor:'Custom color', pattern:'Pattern size', speed:'Simulation speed', curl:'Vortex', radius:'Trail thickness', dissipation:'Dissipation', low:'Low', medium:'Medium', high:'High', reset:'↺ Reset', background:'Background', backgroundHint:'Canvas atmosphere', bgBlack:'Black', bgMidnight:'Midnight', bgDeepBlue:'Deep blue', bgWhite:'White', backgroundColor:'Custom background', shortcuts:'H hide/show · T theme · F fullscreen · R record · S screenshot', hideControls:'Hide controls', openControls:'Open controls', fullscreen:'Fullscreen', exitFullscreen:'Exit fullscreen', language:'Language', hint:'Touch or drag to shape the flow', recOn:'Recording mode on', recOff:'Recording mode off', screenshotSaved:'Screenshot saved', hud:(theme,q)=>`${theme} • ${q} quality • H: Controls` },
+    zh:{ title:'流体模拟', brandSub:'触摸塑造流动', appearance:'外观', flowMotion:'流动与运动', quality:'画质', qualityHint:'默认高画质', rainbow:'彩虹', neon:'霓虹', single:'单色', customColor:'自定义颜色', pattern:'图案大小', speed:'模拟速度', curl:'涡流', radius:'轨迹粗细', dissipation:'消散', low:'低', medium:'中', high:'高', reset:'↺ 重置', background:'背景', backgroundHint:'画布氛围', bgBlack:'黑色', bgMidnight:'午夜', bgDeepBlue:'深蓝', bgWhite:'白色', backgroundColor:'自定义背景', shortcuts:'H 隐藏/显示 · T 切换主题 · F 全屏 · R 录制 · S 截图', hideControls:'隐藏控制', openControls:'打开控制', fullscreen:'全屏', exitFullscreen:'退出全屏', language:'语言', hint:'触摸或拖动以塑造流动', recOn:'录制模式已开启', recOff:'录制模式已关闭', screenshotSaved:'截图已保存', hud:(theme,q)=>`${theme} • ${q} 画质 • H：控制` },
+    hi:{ title:'द्रव सिमुलेशन', brandSub:'स्पर्श से प्रवाह को आकार दें', appearance:'दृश्य', flowMotion:'प्रवाह और गति', quality:'गुणवत्ता', qualityHint:'डिफ़ॉल्ट: उच्च', rainbow:'इंद्रधनुष', neon:'नियॉन', single:'एक रंग', customColor:'कस्टम रंग', pattern:'पैटर्न आकार', speed:'सिमुलेशन गति', curl:'भंवर', radius:'ट्रेल मोटाई', dissipation:'क्षय', low:'कम', medium:'मध्यम', high:'उच्च', reset:'↺ रीसेट', background:'पृष्ठभूमि', backgroundHint:'कैनवास वातावरण', bgBlack:'काला', bgMidnight:'मिडनाइट', bgDeepBlue:'गहरा नीला', bgWhite:'सफेद', backgroundColor:'कस्टम पृष्ठभूमि', shortcuts:'H छिपाएँ/दिखाएँ · T थीम · F फ़ुलस्क्रीन · R रिकॉर्ड · S स्क्रीनशॉट', hideControls:'कंट्रोल छिपाएँ', openControls:'कंट्रोल खोलें', fullscreen:'फ़ुलस्क्रीन', exitFullscreen:'फ़ुलस्क्रीन से बाहर', language:'भाषा', hint:'स्पर्श करें या खींचें', recOn:'रिकॉर्डिंग मोड चालू', recOff:'रिकॉर्डिंग मोड बंद', screenshotSaved:'स्क्रीनशॉट सहेजा गया', hud:(theme,q)=>`${theme} • ${q} गुणवत्ता • H: कंट्रोल` },
+    es:{ title:'Simulación de fluidos', brandSub:'Moldea el flujo con el tacto', appearance:'Apariencia', flowMotion:'Flujo y movimiento', quality:'Calidad', qualityHint:'Inicio: alta', rainbow:'Arcoíris', neon:'Neón', single:'Un color', customColor:'Color personalizado', pattern:'Tamaño del patrón', speed:'Velocidad', curl:'Remolino', radius:'Grosor de estela', dissipation:'Disipación', low:'Baja', medium:'Media', high:'Alta', reset:'↺ Restablecer', background:'Fondo', backgroundHint:'Atmósfera del lienzo', bgBlack:'Negro', bgMidnight:'Medianoche', bgDeepBlue:'Azul profundo', bgWhite:'Blanco', backgroundColor:'Fondo personalizado', shortcuts:'H ocultar/mostrar · T tema · F pantalla completa · R grabar · S captura', hideControls:'Ocultar controles', openControls:'Abrir controles', fullscreen:'Pantalla completa', exitFullscreen:'Salir de pantalla completa', language:'Idioma', hint:'Toca o arrastra para moldear el flujo', recOn:'Modo grabación activado', recOff:'Modo grabación desactivado', screenshotSaved:'Captura guardada', hud:(theme,q)=>`${theme} • Calidad ${q} • H: controles` },
+    fr:{ title:'Simulation de fluides', brandSub:'Façonnez le flux au toucher', appearance:'Apparence', flowMotion:'Flux et mouvement', quality:'Qualité', qualityHint:'Démarrage : élevée', rainbow:'Arc-en-ciel', neon:'Néon', single:'Couleur unique', customColor:'Couleur personnalisée', pattern:'Taille du motif', speed:'Vitesse de simulation', curl:'Tourbillon', radius:'Épaisseur de la traînée', dissipation:'Dissipation', low:'Faible', medium:'Moyenne', high:'Élevée', reset:'↺ Réinitialiser', background:'Arrière-plan', backgroundHint:'Ambiance du canevas', bgBlack:'Noir', bgMidnight:'Minuit', bgDeepBlue:'Bleu profond', bgWhite:'Blanc', backgroundColor:'Arrière-plan personnalisé', shortcuts:'H masquer/afficher · T thème · F plein écran · R enregistrer · S capture', hideControls:'Masquer les contrôles', openControls:'Ouvrir les contrôles', fullscreen:'Plein écran', exitFullscreen:'Quitter le plein écran', language:'Langue', hint:'Touchez ou glissez pour façonner le flux', recOn:'Mode enregistrement activé', recOff:'Mode enregistrement désactivé', screenshotSaved:'Capture enregistrée', hud:(theme,q)=>`${theme} • Qualité ${q} • H : contrôles` },
+    ar:{ title:'محاكاة السوائل', brandSub:'شكّل التدفق باللمس', appearance:'المظهر', flowMotion:'التدفق والحركة', quality:'الجودة', qualityHint:'البدء: عالية', rainbow:'قوس قزح', neon:'نيون', single:'لون واحد', customColor:'لون مخصص', pattern:'حجم النمط', speed:'سرعة المحاكاة', curl:'دوامة', radius:'سُمك الأثر', dissipation:'التلاشي', low:'منخفضة', medium:'متوسطة', high:'عالية', reset:'↺ إعادة ضبط', background:'الخلفية', backgroundHint:'أجواء اللوحة', bgBlack:'أسود', bgMidnight:'ليلي', bgDeepBlue:'أزرق عميق', bgWhite:'أبيض', backgroundColor:'خلفية مخصصة', shortcuts:'H إخفاء/إظهار · T تبديل النمط · F ملء الشاشة · R تسجيل · S لقطة شاشة', hideControls:'إخفاء عناصر التحكم', openControls:'فتح عناصر التحكم', fullscreen:'ملء الشاشة', exitFullscreen:'الخروج من ملء الشاشة', language:'اللغة', hint:'المس أو اسحب لتشكيل التدفق', recOn:'وضع التسجيل مفعّل', recOff:'وضع التسجيل متوقف', screenshotSaved:'تم حفظ لقطة الشاشة', hud:(theme,q)=>`${theme} • الجودة ${q} • H: التحكم` },
+    bn:{ title:'ফ্লুইড সিমুলেশন', brandSub:'স্পর্শে প্রবাহকে আকার দিন', appearance:'দৃশ্য', flowMotion:'প্রবাহ ও গতি', quality:'গুণমান', qualityHint:'শুরু: উচ্চ', rainbow:'রেইনবো', neon:'নিয়ন', single:'এক রঙ', customColor:'কাস্টম রঙ', pattern:'প্যাটার্নের আকার', speed:'সিমুলেশন গতি', curl:'ঘূর্ণি', radius:'ট্রেইলের পুরুত্ব', dissipation:'ক্ষয়', low:'নিম্ন', medium:'মাঝারি', high:'উচ্চ', reset:'↺ রিসেট', background:'পটভূমি', backgroundHint:'ক্যানভাসের আবহ', bgBlack:'কালো', bgMidnight:'মধ্যরাত', bgDeepBlue:'গাঢ় নীল', bgWhite:'সাদা', backgroundColor:'কাস্টম পটভূমি', shortcuts:'H লুকান/দেখান · T থিম · F ফুলস্ক্রিন · R রেকর্ড · S স্ক্রিনশট', hideControls:'কন্ট্রোল লুকান', openControls:'কন্ট্রোল খুলুন', fullscreen:'ফুলস্ক্রিন', exitFullscreen:'ফুলস্ক্রিন থেকে বের হন', language:'ভাষা', hint:'স্পর্শ করুন বা টেনে আনুন', recOn:'রেকর্ডিং মোড চালু', recOff:'রেকর্ডিং মোড বন্ধ', screenshotSaved:'স্ক্রিনশট সংরক্ষিত হয়েছে', hud:(theme,q)=>`${theme} • ${q} মান • H: কন্ট্রোল` },
+    pt:{ title:'Simulação de fluidos', brandSub:'Modele o fluxo com o toque', appearance:'Aparência', flowMotion:'Fluxo e movimento', quality:'Qualidade', qualityHint:'Início: alta', rainbow:'Arco-íris', neon:'Neon', single:'Uma cor', customColor:'Cor personalizada', pattern:'Tamanho do padrão', speed:'Velocidade da simulação', curl:'Vórtice', radius:'Espessura do rastro', dissipation:'Dissipação', low:'Baixa', medium:'Média', high:'Alta', reset:'↺ Redefinir', background:'Fundo', backgroundHint:'Atmosfera da tela', bgBlack:'Preto', bgMidnight:'Meia-noite', bgDeepBlue:'Azul profundo', bgWhite:'Branco', backgroundColor:'Fundo personalizado', shortcuts:'H ocultar/mostrar · T tema · F tela cheia · R gravar · S captura', hideControls:'Ocultar controles', openControls:'Abrir controles', fullscreen:'Tela cheia', exitFullscreen:'Sair da tela cheia', language:'Idioma', hint:'Toque ou arraste para moldar o fluxo', recOn:'Modo de gravação ativado', recOff:'Modo de gravação desativado', screenshotSaved:'Captura salva', hud:(theme,q)=>`${theme} • Qualidade ${q} • H: controles` },
+    ru:{ title:'Симуляция жидкости', brandSub:'Формируйте поток касанием', appearance:'Вид', flowMotion:'Поток и движение', quality:'Качество', qualityHint:'Старт: высокое', rainbow:'Радуга', neon:'Неон', single:'Один цвет', customColor:'Свой цвет', pattern:'Размер узора', speed:'Скорость симуляции', curl:'Вихрь', radius:'Толщина следа', dissipation:'Затухание', low:'Низкое', medium:'Среднее', high:'Высокое', reset:'↺ Сбросить', background:'Фон', backgroundHint:'Атмосфера холста', bgBlack:'Чёрный', bgMidnight:'Полночь', bgDeepBlue:'Тёмно-синий', bgWhite:'Белый', backgroundColor:'Свой фон', shortcuts:'H скрыть/показать · T тема · F полный экран · R запись · S скриншот', hideControls:'Скрыть управление', openControls:'Открыть управление', fullscreen:'Полный экран', exitFullscreen:'Выйти из полного экрана', language:'Язык', hint:'Коснитесь или проведите пальцем', recOn:'Режим записи включён', recOff:'Режим записи выключен', screenshotSaved:'Скриншот сохранён', hud:(theme,q)=>`${theme} • Качество: ${q} • H: управление` },
+    id:{ title:'Simulasi Fluida', brandSub:'Bentuk aliran dengan sentuhan', appearance:'Tampilan', flowMotion:'Aliran & Gerakan', quality:'Kualitas', qualityHint:'Mulai: tinggi', rainbow:'Pelangi', neon:'Neon', single:'Satu warna', customColor:'Warna kustom', pattern:'Ukuran pola', speed:'Kecepatan simulasi', curl:'Pusaran', radius:'Ketebalan jejak', dissipation:'Pelemahan', low:'Rendah', medium:'Sedang', high:'Tinggi', reset:'↺ Atur ulang', background:'Latar', backgroundHint:'Suasana kanvas', bgBlack:'Hitam', bgMidnight:'Tengah malam', bgDeepBlue:'Biru tua', bgWhite:'Putih', backgroundColor:'Latar kustom', shortcuts:'H sembunyikan/tampilkan · T tema · F layar penuh · R rekam · S tangkapan layar', hideControls:'Sembunyikan kontrol', openControls:'Buka kontrol', fullscreen:'Layar penuh', exitFullscreen:'Keluar layar penuh', language:'Bahasa', hint:'Sentuh atau seret untuk membentuk aliran', recOn:'Mode rekam aktif', recOff:'Mode rekam nonaktif', screenshotSaved:'Tangkapan layar disimpan', hud:(theme,q)=>`${theme} • Kualitas ${q} • H: kontrol` },
+    tr:{ title:'Akışkan Simülasyonu', brandSub:'Akışı dokunarak şekillendir', appearance:'Görünüm', flowMotion:'Akış & Hareket', quality:'Kalite', qualityHint:'Başlangıç: Yüksek', rainbow:'Gökkuşağı', neon:'Neon', single:'Tek renk', customColor:'Özel renk', pattern:'Desen boyutu', speed:'Simülasyon hızı', curl:'Girdap', radius:'İz kalınlığı', dissipation:'Sönme', low:'Düşük', medium:'Orta', high:'Yüksek', reset:'↺ Sıfırla', background:'Arka plan', backgroundHint:'Tuval atmosferi', bgBlack:'Siyah', bgMidnight:'Gece', bgDeepBlue:'Koyu mavi', bgWhite:'Beyaz', backgroundColor:'Özel arka plan', shortcuts:'H gizle/göster · T tema · F tam ekran · R kayıt · S ekran görüntüsü', hideControls:'Kontrolleri gizle', openControls:'Kontrolleri aç', fullscreen:'Tam ekran', exitFullscreen:'Tam ekrandan çık', language:'Dil', hint:'Akışı şekillendirmek için dokun veya sürükle', recOn:'Kayıt modu açık', recOff:'Kayıt modu kapalı', screenshotSaved:'Ekran görüntüsü kaydedildi', hud:(theme,q)=>`${theme} • ${q} kalite • H: Kontroller` }
   };
   const THEME_LABELS = {
-    en:{'Duman':'Smoke','Noktalar':'Dots','Çizgiler':'Lines','Piksel':'Pixel','Kontur':'Contour','Neon Hat':'Neon Lines','Akış Çizgileri':'Flow Lines','Kaleydoskop':'Kaleidoscope','Termal':'Thermal','Cam':'Glass','Mürekkep':'Ink','Parçacık İzleri':'Particle Trails','Aurora':'Aurora'},
-    zh:{'Duman':'烟雾','Noktalar':'点','Çizgiler':'线条','Piksel':'像素','Kontur':'轮廓','Neon Hat':'霓虹线','Akış Çizgileri':'流线','Kaleydoskop':'万花筒','Termal':'热成像','Cam':'玻璃','Mürekkep':'墨水','Parçacık İzleri':'粒子轨迹','Aurora':'极光'},
-    hi:{'Duman':'धुआँ','Noktalar':'बिंदु','Çizgiler':'रेखाएँ','Piksel':'पिक्सेल','Kontur':'कॉन्टूर','Neon Hat':'नियॉन रेखाएँ','Akış Çizgileri':'प्रवाह रेखाएँ','Kaleydoskop':'कैलिडोस्कोप','Termal':'थर्मल','Cam':'काँच','Mürekkep':'स्याही','Parçacık İzleri':'कण ट्रेल','Aurora':'ऑरोरा'},
-    es:{'Duman':'Humo','Noktalar':'Puntos','Çizgiler':'Líneas','Piksel':'Píxel','Kontur':'Contorno','Neon Hat':'Líneas neón','Akış Çizgileri':'Líneas de flujo','Kaleydoskop':'Caleidoscopio','Termal':'Térmico','Cam':'Cristal','Mürekkep':'Tinta','Parçacık İzleri':'Estelas de partículas','Aurora':'Aurora'},
-    fr:{'Duman':'Fumée','Noktalar':'Points','Çizgiler':'Lignes','Piksel':'Pixel','Kontur':'Contour','Neon Hat':'Lignes néon','Akış Çizgileri':'Lignes de flux','Kaleydoskop':'Kaléidoscope','Termal':'Thermique','Cam':'Verre','Mürekkep':'Encre','Parçacık İzleri':'Traînées de particules','Aurora':'Aurore'},
-    ar:{'Duman':'دخان','Noktalar':'نقاط','Çizgiler':'خطوط','Piksel':'بكسل','Kontur':'حدود','Neon Hat':'خطوط نيون','Akış Çizgileri':'خطوط التدفق','Kaleydoskop':'مشهد كاليدوسكوب','Termal':'حراري','Cam':'زجاج','Mürekkep':'حبر','Parçacık İzleri':'آثار الجسيمات','Aurora':'الشفق القطبي'},
-    bn:{'Duman':'ধোঁয়া','Noktalar':'বিন্দু','Çizgiler':'রেখা','Piksel':'পিক্সেল','Kontur':'কনট্যুর','Neon Hat':'নিয়ন রেখা','Akış Çizgileri':'প্রবাহ রেখা','Kaleydoskop':'ক্যালাইডোস্কোপ','Termal':'থার্মাল','Cam':'কাচ','Mürekkep':'কালি','Parçacık İzleri':'কণার ট্রেইল','Aurora':'অরোরা'},
-    pt:{'Duman':'Fumaça','Noktalar':'Pontos','Çizgiler':'Linhas','Piksel':'Pixel','Kontur':'Contorno','Neon Hat':'Linhas neon','Akış Çizgileri':'Linhas de fluxo','Kaleydoskop':'Caleidoscópio','Termal':'Térmico','Cam':'Vidro','Mürekkep':'Tinta','Parçacık İzleri':'Rastros de partículas','Aurora':'Aurora'},
-    ru:{'Duman':'Дым','Noktalar':'Точки','Çizgiler':'Линии','Piksel':'Пиксели','Kontur':'Контур','Neon Hat':'Неоновые линии','Akış Çizgileri':'Линии потока','Kaleydoskop':'Калейдоскоп','Termal':'Тепловизор','Cam':'Стекло','Mürekkep':'Чернила','Parçacık İzleri':'Следы частиц','Aurora':'Северное сияние'},
-    id:{'Duman':'Asap','Noktalar':'Titik','Çizgiler':'Garis','Piksel':'Piksel','Kontur':'Kontur','Neon Hat':'Garis Neon','Akış Çizgileri':'Garis Aliran','Kaleydoskop':'Kaleidoskop','Termal':'Termal','Cam':'Kaca','Mürekkep':'Tinta','Parçacık İzleri':'Jejak Partikel','Aurora':'Aurora'},
-    tr:{'Duman':'Duman','Noktalar':'Noktalar','Çizgiler':'Çizgiler','Piksel':'Piksel','Kontur':'Kontur','Neon Hat':'Neon Hat','Akış Çizgileri':'Akış Çizgileri','Kaleydoskop':'Kaleydoskop','Termal':'Termal','Cam':'Cam','Mürekkep':'Mürekkep','Parçacık İzleri':'Parçacık İzleri','Aurora':'Aurora'}
+    en:{'Duman':'Smoke','Noktalar':'Dots','Çizgiler':'Lines','Piksel':'Pixel','Kontur':'Contour','Neon Hat':'Neon Lines','Akış Çizgileri':'Flow Lines','Ayna':'Mirror','Termal':'Thermal','Cam':'Glass','Mürekkep':'Ink','Parçacık İzleri':'Particle Trails','Aurora':'Aurora','Su':'Water','Hava':'Air','Plazma':'Plasma'},
+    zh:{'Duman':'烟雾','Noktalar':'点','Çizgiler':'线条','Piksel':'像素','Kontur':'轮廓','Neon Hat':'霓虹线','Akış Çizgileri':'流线','Ayna':'镜像','Termal':'热成像','Cam':'玻璃','Mürekkep':'墨水','Parçacık İzleri':'粒子轨迹','Aurora':'极光','Su':'水','Hava':'空气','Plazma':'等离子'},
+    hi:{'Duman':'धुआँ','Noktalar':'बिंदु','Çizgiler':'रेखाएँ','Piksel':'पिक्सेल','Kontur':'कॉन्टूर','Neon Hat':'नियॉन रेखाएँ','Akış Çizgileri':'प्रवाह रेखाएँ','Ayna':'मिरर','Termal':'थर्मल','Cam':'काँच','Mürekkep':'स्याही','Parçacık İzleri':'कण ट्रेल','Aurora':'ऑरोरा','Su':'जल','Hava':'वायु','Plazma':'प्लाज़्मा'},
+    es:{'Duman':'Humo','Noktalar':'Puntos','Çizgiler':'Líneas','Piksel':'Píxel','Kontur':'Contorno','Neon Hat':'Líneas neón','Akış Çizgileri':'Líneas de flujo','Ayna':'Espejo','Termal':'Térmico','Cam':'Cristal','Mürekkep':'Tinta','Parçacık İzleri':'Estelas de partículas','Aurora':'Aurora','Su':'Agua','Hava':'Aire','Plazma':'Plasma'},
+    fr:{'Duman':'Fumée','Noktalar':'Points','Çizgiler':'Lignes','Piksel':'Pixel','Kontur':'Contour','Neon Hat':'Lignes néon','Akış Çizgileri':'Lignes de flux','Ayna':'Miroir','Termal':'Thermique','Cam':'Verre','Mürekkep':'Encre','Parçacık İzleri':'Traînées de particules','Aurora':'Aurore','Su':'Eau','Hava':'Air','Plazma':'Plasma'},
+    ar:{'Duman':'دخان','Noktalar':'نقاط','Çizgiler':'خطوط','Piksel':'بكسل','Kontur':'حدود','Neon Hat':'خطوط نيون','Akış Çizgileri':'خطوط التدفق','Ayna':'مرآة','Termal':'حراري','Cam':'زجاج','Mürekkep':'حبر','Parçacık İzleri':'آثار الجسيمات','Aurora':'الشفق القطبي','Su':'ماء','Hava':'هواء','Plazma':'بلازما'},
+    bn:{'Duman':'ধোঁয়া','Noktalar':'বিন্দু','Çizgiler':'রেখা','Piksel':'পিক্সেল','Kontur':'কনট্যুর','Neon Hat':'নিয়ন রেখা','Akış Çizgileri':'প্রবাহ রেখা','Ayna':'আয়না','Termal':'থার্মাল','Cam':'কাচ','Mürekkep':'কালি','Parçacık İzleri':'কণার ট্রেইল','Aurora':'অরোরা','Su':'জল','Hava':'বায়ু','Plazma':'প্লাজমা'},
+    pt:{'Duman':'Fumaça','Noktalar':'Pontos','Çizgiler':'Linhas','Piksel':'Pixel','Kontur':'Contorno','Neon Hat':'Linhas neon','Akış Çizgileri':'Linhas de fluxo','Ayna':'Espelho','Termal':'Térmico','Cam':'Vidro','Mürekkep':'Tinta','Parçacık İzleri':'Rastros de partículas','Aurora':'Aurora','Su':'Água','Hava':'Ar','Plazma':'Plasma'},
+    ru:{'Duman':'Дым','Noktalar':'Точки','Çizgiler':'Линии','Piksel':'Пиксели','Kontur':'Контур','Neon Hat':'Неоновые линии','Akış Çizgileri':'Линии потока','Ayna':'Зеркало','Termal':'Тепловизор','Cam':'Стекло','Mürekkep':'Чернила','Parçacık İzleri':'Следы частиц','Aurora':'Северное сияние','Su':'Вода','Hava':'Воздух','Plazma':'Плазма'},
+    id:{'Duman':'Asap','Noktalar':'Titik','Çizgiler':'Garis','Piksel':'Piksel','Kontur':'Kontur','Neon Hat':'Garis Neon','Akış Çizgileri':'Garis Aliran','Ayna':'Cermin','Termal':'Termal','Cam':'Kaca','Mürekkep':'Tinta','Parçacık İzleri':'Jejak Partikel','Aurora':'Aurora','Su':'Air','Hava':'Udara','Plazma':'Plasma'},
+    tr:{'Duman':'Duman','Noktalar':'Noktalar','Çizgiler':'Çizgiler','Piksel':'Piksel','Kontur':'Kontur','Neon Hat':'Neon Hat','Akış Çizgileri':'Akış Çizgileri','Ayna':'Ayna','Termal':'Termal','Cam':'Cam','Mürekkep':'Mürekkep','Parçacık İzleri':'Parçacık İzleri','Aurora':'Aurora','Su':'Su','Hava':'Hava','Plazma':'Plazma'}
   };
   // ---------- Modern kontrol paneli ----------
-  const guiVisibleDefault = true;
+  const guiVisibleDefault = false;
   let guiVisible = guiVisibleDefault;
   const hudText = document.getElementById('hudText');
   const controlPanel = document.getElementById('controlPanel');
@@ -559,9 +737,11 @@ canvas.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') po
   const themeHint = document.getElementById('themeHint');
   const colorInput = document.getElementById('colorInput');
   const colorHex = document.getElementById('colorHex');
+  const backgroundInput = document.getElementById('backgroundInput');
+  const backgroundHex = document.getElementById('backgroundHex');
 
   const languageSelect = document.getElementById('languageSelect');
-  let currentLanguage = (localStorage.getItem('fluidStudioLanguage') || 'en');
+  let currentLanguage = 'en';
   if (!LANGS.includes(currentLanguage)) currentLanguage = 'en';
   LANGS.forEach(code => {
     const opt = document.createElement('option');
@@ -612,6 +792,14 @@ canvas.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') po
   document.querySelectorAll('[data-color]').forEach(btn => btn.addEventListener('click', () => setColorMode(btn.dataset.color)));
 
   colorInput.addEventListener('input', () => { cfg.color = colorInput.value; colorHex.textContent = cfg.color.toUpperCase(); });
+  function setBackground(color) {
+    cfg.background = color.toLowerCase();
+    backgroundInput.value = cfg.background;
+    backgroundHex.textContent = cfg.background.toUpperCase();
+    document.querySelectorAll('[data-bg]').forEach(btn => btn.classList.toggle('active', btn.dataset.bg.toLowerCase() === cfg.background));
+  }
+  document.querySelectorAll('[data-bg]').forEach(btn => btn.addEventListener('click', () => setBackground(btn.dataset.bg)));
+  backgroundInput.addEventListener('input', () => setBackground(backgroundInput.value));
   document.querySelectorAll('[data-quality]').forEach(btn => btn.addEventListener('click', () => {
     cfg.quality = btn.dataset.quality; document.querySelectorAll('[data-quality]').forEach(b => b.classList.toggle('active', b === btn)); initFramebuffers();
   }));
@@ -629,6 +817,13 @@ canvas.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') po
     document.getElementById('qualityLabel').textContent = t.quality;
     document.getElementById('qualityHint').textContent = t.qualityHint;
     document.getElementById('customColorLabel').textContent = t.customColor;
+    document.getElementById('backgroundLabel').textContent = t.background;
+    document.getElementById('backgroundHint').textContent = t.backgroundHint;
+    document.getElementById('bgBlackText').textContent = t.bgBlack;
+    document.getElementById('bgMidnightText').textContent = t.bgMidnight;
+    document.getElementById('bgDeepBlueText').textContent = t.bgDeepBlue;
+    document.getElementById('bgWhiteText').textContent = t.bgWhite;
+    document.getElementById('backgroundColorLabel').textContent = t.backgroundColor;
     document.getElementById('colorRainbow').textContent = t.rainbow;
     document.getElementById('colorNeon').textContent = t.neon;
     document.getElementById('colorSingle').textContent = t.single;
@@ -648,7 +843,6 @@ canvas.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') po
     languageSelect.setAttribute('aria-label', t.language);
     syncFullscreenIcon();
     syncUi();
-    localStorage.setItem('fluidStudioLanguage', currentLanguage);
   }
 
   function syncUi() {
@@ -661,6 +855,7 @@ canvas.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') po
       btn.setAttribute('aria-selected', String(active));
     });
     colorInput.value = cfg.color; colorHex.textContent = cfg.color.toUpperCase();
+    setBackground(cfg.background);
     setColorMode(cfg.colorMode);
     Object.keys(ranges).forEach(syncRange);
     document.querySelectorAll('[data-quality]').forEach(btn => btn.classList.toggle('active', btn.dataset.quality === cfg.quality));
@@ -681,7 +876,7 @@ canvas.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') po
 
   languageSelect.addEventListener('change', () => applyLanguage(languageSelect.value));
 
-  const DEFAULTS = { theme:'Duman', pattern:12, colorMode:'Gökkuşağı', color:'#00ffd0', speed:1, quality:'Yüksek', curl:25, splatRadius:0.25, dissipation:0.9 };
+  const DEFAULTS = { theme:'Duman', pattern:12, colorMode:'Gökkuşağı', color:'#00ffd0', background:'#05070d', speed:1, quality:'Yüksek', curl:25, splatRadius:0.25, dissipation:0.9 };
   document.getElementById('resetBtn').addEventListener('click', () => {
     Object.assign(cfg, DEFAULTS); initFramebuffers(); syncUi();
   });
@@ -715,22 +910,80 @@ canvas.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') po
   }
   document.addEventListener('fullscreenchange', () => {
     syncFullscreenIcon();
+    showToast(document.fullscreenElement ? I18N[currentLanguage].fullscreen : I18N[currentLanguage].exitFullscreen);
     requestAnimationFrame(() => requestAnimationFrame(syncViewport));
   });
   window.addEventListener('resize', () => requestAnimationFrame(syncViewport), {passive:true});
   if (window.visualViewport) window.visualViewport.addEventListener('resize', () => requestAnimationFrame(syncViewport), {passive:true});
   syncFullscreenIcon();
 
+  // ---------- Ekran görüntüsü ----------
+  const shotBtn = document.getElementById('shotBtn');
+  function takeScreenshot() {
+    requestAnimationFrame(() => {
+      try {
+        const url = canvas.toDataURL('image/png');
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `fluid-studio-${Date.now()}.png`;
+        document.body.appendChild(a); a.click(); a.remove();
+        shotBtn.classList.remove('flash'); void shotBtn.offsetWidth; shotBtn.classList.add('flash');
+        showToast(I18N[currentLanguage].screenshotSaved);
+      } catch (err) { console.warn('Ekran görüntüsü alınamadı:', err); }
+    });
+  }
+  shotBtn.addEventListener('click', takeScreenshot);
+
+  // ---------- İlk kullanım ipucu ----------
+  const hintTip = document.getElementById('hintTip');
+  if (hintTip && !localStorage.getItem('fluidStudioHintSeen')) {
+    hintTip.textContent = (I18N[currentLanguage] || I18N.en).hint || '';
+    requestAnimationFrame(() => hintTip.classList.add('show'));
+    setTimeout(() => {
+      hintTip.classList.remove('show');
+      localStorage.setItem('fluidStudioHintSeen', '1');
+    }, 3200);
+  }
+
   applyLanguage(currentLanguage);
+  setControlsVisible(guiVisibleDefault);
+
+  // ---------- Kısayol bildirimi (toast) ----------
+  const toast = document.getElementById('toast');
+  const toastText = document.getElementById('toastText');
+  let toastTimer = null;
+  function showToast(msg, isRec) {
+    if (!msg) return;
+    toastText.textContent = msg;
+    toast.classList.toggle('rec', !!isRec);
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), isRec ? 1400 : 1300);
+  }
 
   addEventListener('keydown', e => {
     const tag = document.activeElement?.tagName;
     if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+    const t = I18N[currentLanguage];
     if (e.key.toLowerCase() === 't') {
       cfg.theme = THEMES[(THEMES.indexOf(cfg.theme) + 1) % THEMES.length]; syncUi();
+      showToast(THEME_LABELS[currentLanguage][cfg.theme] || cfg.theme);
     }
-    if (e.key.toLowerCase() === 'h') setControlsVisible(!guiVisible);
-    if (e.key.toLowerCase() === 'f') toggleFullscreen();
+    if (e.key.toLowerCase() === 'h') {
+      setControlsVisible(!guiVisible);
+      showToast(guiVisible ? t.hideControls : t.openControls);
+    }
+    if (e.key.toLowerCase() === 'f') {
+      toggleFullscreen();
+    }
+    if (e.key.toLowerCase() === 'r') {
+      document.body.classList.toggle('recording');
+      const on = document.body.classList.contains('recording');
+      showToast(on ? t.recOn : t.recOff, on);
+    }
+    if (e.key.toLowerCase() === 's') {
+      takeScreenshot();
+    }
   });
 
 // ---------- Ana döngü ----------
