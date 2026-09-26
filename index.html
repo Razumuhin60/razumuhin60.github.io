@@ -134,6 +134,19 @@
   @keyframes shotFlash { 0% { box-shadow: 0 0 0 0 rgba(255,255,255,.9), 0 10px 30px rgba(0,0,0,.22); } 100% { box-shadow: 0 0 0 22px rgba(255,255,255,0), 0 10px 30px rgba(0,0,0,.22); } }
   body.recording #shotBtn { opacity: 0 !important; pointer-events: none !important; visibility: hidden !important; }
 
+  #recBtn {
+    position: fixed; right: 122px; bottom: max(14px, env(safe-area-inset-bottom)); z-index: 21;
+    width: 46px; height: 46px; border: 1px solid rgba(255,255,255,.14);
+    border-radius: 14px; background: rgba(8,12,20,.46); color: white;
+    display: grid; place-items: center; cursor: pointer;
+    backdrop-filter: blur(14px) saturate(135%); -webkit-backdrop-filter: blur(14px) saturate(135%);
+    box-shadow: 0 10px 30px rgba(0,0,0,.22); transition: transform .18s ease, background .18s ease;
+  }
+  #recBtn:hover { transform: translateY(-2px); background: rgba(255,255,255,.12); }
+  #recBtn:active { transform: scale(.96); }
+  #recBtn svg { width: 20px; height: 20px; }
+  body.recording #recBtn { opacity: 0 !important; pointer-events: none !important; visibility: hidden !important; }
+
   #hintTip {
     position: fixed; left: 50%; bottom: max(76px, calc(env(safe-area-inset-bottom) + 76px)); z-index: 22;
     transform: translateX(-50%) translateY(6px); opacity: 0; pointer-events: none;
@@ -170,6 +183,7 @@
     #hud { left:9px; bottom:max(9px, env(safe-area-inset-bottom)); padding:9px 10px; }
     #fullscreenBtn { right:9px; bottom:max(9px, env(safe-area-inset-bottom)); width:44px; height:44px; }
     #shotBtn { right: 60px; bottom: max(9px, env(safe-area-inset-bottom)); width: 44px; height: 44px; }
+    #recBtn { right: 111px; bottom: max(9px, env(safe-area-inset-bottom)); width: 44px; height: 44px; }
     #hintTip { bottom: max(66px, calc(env(safe-area-inset-bottom) + 66px)); font-size: 11px; padding: 9px 14px; max-width: calc(100vw - 24px); white-space: normal; text-align: center; }
   }
 
@@ -221,7 +235,7 @@
     #controlPanel { top: max(6px, env(safe-area-inset-top)); max-height: calc(100dvh - 12px); padding: 10px; }
     #controlPanel .panelSection { padding: 8px 0; }
     .themeGrid { max-height: 130px; }
-    #controlToggle, #fullscreenBtn, #shotBtn { width: 40px; height: 40px; }
+    #controlToggle, #fullscreenBtn, #shotBtn, #recBtn { width: 40px; height: 40px; }
     #coffeeBtn { height: 36px; }
     #hud { padding: 7px 9px; }
     #hintTip { bottom: max(52px, calc(env(safe-area-inset-bottom) + 52px)); }
@@ -235,7 +249,7 @@
   /* Dokunmatik cihazlarda hover efektlerini devre dışı bırak (tıklama sonrası takılı kalan stil olmasın) */
   @media (hover: none) {
     .iconBtn:hover, .themeBtn:hover, .bgBtn:hover, #controlToggle:hover,
-    #fullscreenBtn:hover, #shotBtn:hover, #coffeeBtn:hover { transform: none; }
+    #fullscreenBtn:hover, #shotBtn:hover, #recBtn:hover, #coffeeBtn:hover { transform: none; }
   }
 
   /* Tüm etkileşimli öğelerde dokunma gecikmesini kaldır */
@@ -253,7 +267,7 @@
 </head>
 <body>
 <canvas id="c"></canvas>
-<a id="coffeeBtn" href="https://buymeacoffee.com/razumuhin" target="_blank" rel="noopener noreferrer" aria-label="Buy me a coffee" title="Buy me a coffee">
+<a id="coffeeBtn" href="https://www.buymeacoffee.com/KULLANICI_ADIN" target="_blank" rel="noopener noreferrer" aria-label="Buy me a coffee" title="Buy me a coffee">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" y1="2" x2="6" y2="4"/><line x1="10" y1="2" x2="10" y2="4"/><line x1="14" y1="2" x2="14" y2="4"/></svg>
   <span class="coffeeLabel">Buy me a coffee</span>
 </a>
@@ -308,6 +322,12 @@
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
     <path d="M4 8a2 2 0 0 1 2-2h1.5l1-1.5h7l1 1.5H18a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/>
     <circle cx="12" cy="13" r="3.5"/>
+  </svg>
+</button>
+<button id="recBtn" type="button" aria-label="Record Mode (R)" title="Record Mode (R)">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="5" fill="currentColor"/>
+    <circle cx="12" cy="12" r="10"/>
   </svg>
 </button>
 <div id="hintTip"></div>
@@ -934,6 +954,15 @@ canvas.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') po
   }
   shotBtn.addEventListener('click', takeScreenshot);
 
+  // ---------- Kayıt (Arayüz Gizleme) Butonu ----------
+  const recBtn = document.getElementById('recBtn');
+  function toggleRecordMode() {
+    document.body.classList.toggle('recording');
+    const on = document.body.classList.contains('recording');
+    showToast(on ? I18N[currentLanguage].recOn : I18N[currentLanguage].recOff, on);
+  }
+  recBtn.addEventListener('click', toggleRecordMode);
+
   // ---------- İlk kullanım ipucu ----------
   const hintTip = document.getElementById('hintTip');
   if (hintTip && !localStorage.getItem('fluidStudioHintSeen')) {
@@ -977,9 +1006,7 @@ canvas.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') po
       toggleFullscreen();
     }
     if (e.key.toLowerCase() === 'r') {
-      document.body.classList.toggle('recording');
-      const on = document.body.classList.contains('recording');
-      showToast(on ? t.recOn : t.recOff, on);
+      toggleRecordMode();
     }
     if (e.key.toLowerCase() === 's') {
       takeScreenshot();
