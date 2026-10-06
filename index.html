@@ -78,10 +78,10 @@
   .bgSwatch { width:18px; height:18px; border-radius:50%; display:block; border:1px solid rgba(255,255,255,.18); box-shadow:0 3px 10px rgba(0,0,0,.18); }
   .bgBlack { background:#000; } .bgMidnight { background:#07101f; } .bgDeepBlue { background:#041a2a; } .bgWhite { background:#f4f7fb; border-color:rgba(0,0,0,.16); }
 
-  .qualityGrid { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; }
+  .qualityGrid { display:grid; grid-template-columns:repeat(4,1fr); gap:7px; }
   .qualityBtn { border:1px solid rgba(255,255,255,.08); border-radius:12px; background:rgba(255,255,255,.045); color:rgba(255,255,255,.56); padding:10px 6px; cursor:pointer; font:700 11px inherit; }
   .qualityBtn.active { color:white; border-color:rgba(142,246,218,.32); background:rgba(142,246,218,.1); box-shadow:0 0 0 1px rgba(142,246,218,.06), inset 0 0 18px rgba(142,246,218,.05); }
-  .panelFoot { display:flex; align-items:center; justify-content:space-between; gap:10px; padding-top:12px; border-top:1px solid rgba(255,255,255,.07); }
+  .panelFoot { display:flex; align-items:center; justify-content:space-between; gap:6px; padding-top:12px; border-top:1px solid rgba(255,255,255,.07); flex-wrap:wrap; }
   .resetBtn { border:1px solid rgba(255,255,255,.1); border-radius:11px; background:rgba(255,255,255,.05); color:rgba(255,255,255,.72); padding:9px 11px; cursor:pointer; font:700 11px inherit; }
   .shortcut { color:rgba(255,255,255,.34); font-size:10px; line-height:1.45; text-align:right; }
 
@@ -302,16 +302,20 @@
   <div class="panelSection">
     <div class="sectionTitle" id="flowMotionLabel">Flow & Motion</div>
     <div class="rangeRow"><div class="rangeMeta"><span class="rangeName" id="label-pattern">Pattern size</span><span class="rangeValue" id="patternValue"></span></div><input id="patternRange" type="range" min="4" max="40" step="1"></div>
-    <div class="rangeRow"><div class="rangeMeta"><span class="rangeName" id="label-speed">Simulation speed</span><span class="rangeValue" id="speedValue"></span></div><input id="speedRange" type="range" min="0.1" max="3" step="0.01"></div>
+    <div class="rangeRow"><div class="rangeMeta"><span class="rangeName" id="label-speed">Simulation speed</span><span class="rangeValue" id="speedValue"></span></div><input id="speedRange" type="range" min="0.5" max="2.6" step="0.01"></div>
     <div class="rangeRow"><div class="rangeMeta"><span class="rangeName" id="label-curl">Vortex</span><span class="rangeValue" id="curlValue"></span></div><input id="curlRange" type="range" min="0" max="50" step="1"></div>
     <div class="rangeRow"><div class="rangeMeta"><span class="rangeName" id="label-radius">Trail thickness</span><span class="rangeValue" id="radiusValue"></span></div><input id="radiusRange" type="range" min="0.05" max="1" step="0.01"></div>
-    <div class="rangeRow" style="margin-bottom:2px"><div class="rangeMeta"><span class="rangeName" id="label-dissipation">Dissipation</span><span class="rangeValue" id="dissipationValue"></span></div><input id="dissipationRange" type="range" min="0" max="4" step="0.05"></div>
+    <div class="rangeRow" style="margin-bottom:2px"><div class="rangeMeta"><span class="rangeName" id="label-dissipation">Dissipation</span><span class="rangeValue" id="dissipationValue"></span></div><input id="dissipationRange" type="range" min="0.6" max="3" step="0.05"></div>
   </div>
   <div class="panelSection">
     <div class="sectionTitle"><span id="qualityLabel">Quality</span><span class="sectionHint" id="qualityHint">Starts high</span></div>
-    <div class="qualityGrid"><button type="button" class="qualityBtn" data-quality="Düşük" id="qualityLow">Low</button><button type="button" class="qualityBtn" data-quality="Orta" id="qualityMedium">Medium</button><button type="button" class="qualityBtn" data-quality="Yüksek" id="qualityHigh">High</button></div>
+    <div class="qualityGrid"><button type="button" class="qualityBtn" data-quality="Düşük" id="qualityLow">Low</button><button type="button" class="qualityBtn" data-quality="Orta" id="qualityMedium">Medium</button><button type="button" class="qualityBtn" data-quality="Yüksek" id="qualityHigh">High</button><button type="button" class="qualityBtn" data-quality="Ultra" id="qualityUltra">Ultra</button></div>
   </div>
-  <div class="panelFoot"><button class="resetBtn" id="resetBtn" type="button">↺ Reset</button><div class="shortcut" id="shortcutText">H hide/show · T theme · F fullscreen</div></div>
+  <div class="panelFoot">
+    <button class="resetBtn" id="resetBtn" type="button">↺ Reset</button>
+    <button class="resetBtn" id="customThemeBtn" type="button" style="color: var(--accent); border-color: rgba(142,246,218,.3); background: rgba(142,246,218,.08);">🎲 Rastgele Ayar (M)</button>
+    <div class="shortcut" id="shortcutText">H hide/show · T theme · F fullscreen · M random settings</div>
+  </div>
 </section>
 <button id="fullscreenBtn" type="button" aria-label="Fullscreen" title="Fullscreen">
   <svg id="fsIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
@@ -338,8 +342,132 @@ const canvas = document.getElementById('c');
 const isMobile = /Android|iPhone|iPad|iPod|Mobi/i.test(navigator.userAgent) || innerWidth < 700;
 
 // ---------- Ayarlar ----------
-const QUALITY = { 'Düşük': 64, 'Orta': 128, 'Yüksek': 256 };
+const QUALITY = { 'Düşük': 64, 'Orta': 128, 'Yüksek': 256, 'Ultra': 512 };
 const THEMES = ['Duman', 'Noktalar', 'Çizgiler', 'Piksel', 'Kontur', 'Neon Hat', 'Akış Çizgileri', 'Ayna', 'Termal', 'Cam', 'Mürekkep', 'Parçacık İzleri', 'Aurora', 'Su', 'Hava', 'Plazma'];
+// Yeni görünümler yalnızca görüntüleme katmanını değiştirir; akış ayarları korunur.
+const EXTRA_THEMES = [
+  { name:'Galaksi', en:'Galaxy', colors:['#231052','#b43cff','#66dfff'], style:3 },
+  { name:'Süpernova', en:'Supernova', colors:['#651247','#ff5638','#ffe6a3'], style:4 },
+  { name:'Kozmik Toz', en:'Cosmic Dust', colors:['#252766','#897aff','#f5c9ff'], style:3 },
+  { name:'Gece Yörüngesi', en:'Midnight Orbit', colors:['#081c54','#307dff','#81fff0'], style:5 },
+  { name:'Siber Şeker', en:'Cyber Candy', colors:['#5f0d85','#ff39b9','#39edff'], style:2 },
+  { name:'Neon Tokyo', en:'Neon Tokyo', colors:['#26125f','#f52b80','#54ffdd'], style:2 },
+  { name:'Elektrik', en:'Electric', colors:['#142d88','#00baff','#d3fcff'], style:2 },
+  { name:'Lazer Lime', en:'Laser Lime', colors:['#124839','#75ff38','#eeff9d'], style:2 },
+  { name:'Gün Batımı', en:'Sunset', colors:['#671356','#ff714f','#ffdf93'], style:0 },
+  { name:'Mango Tango', en:'Mango Tango', colors:['#922743','#ff9a24','#fff4ae'], style:4 },
+  { name:'Lav', en:'Lava', colors:['#6a091c','#ff3b12','#ffd86f'], style:4 },
+  { name:'Anka', en:'Phoenix', colors:['#6d115d','#ff5b36','#fff0b5'], style:5 },
+  { name:'Okyanus İpeği', en:'Ocean Silk', colors:['#063a65','#00c9b7','#b6fff1'], style:0 },
+  { name:'Buzul', en:'Glacier', colors:['#1d437e','#60d7ff','#f0fcff'], style:1 },
+  { name:'Deniz Ateşi', en:'Sea Spark', colors:['#072e53','#00cbe6','#a7ffdc'], style:3 },
+  { name:'Zümrüt', en:'Emerald', colors:['#07563e','#24dc88','#d7ffac'], style:1 },
+  { name:'Sıvı Altın', en:'Liquid Gold', colors:['#704216','#e9ae42','#fff1bf'], style:1 },
+  { name:'Roze Altın', en:'Rose Gold', colors:['#794453','#eaaa95','#fff0da'], style:1 },
+  { name:'Krom', en:'Chrome', colors:['#344966','#9cbcd4','#f4ffff'], style:1 },
+  { name:'Hologram', en:'Hologram', colors:['#7951c7','#58e2d4','#ffd1ed'], style:1 },
+  { name:'Sakura', en:'Sakura', colors:['#702e83','#f785bc','#ffe0eb'], style:0 },
+  { name:'Lavanta Rüyası', en:'Lavender Dream', colors:['#523285','#b39cf5','#ffe2fc'], style:0 },
+  { name:'Kadife', en:'Velvet', colors:['#41194c','#b33579','#ffb5ab'], style:0 },
+  { name:'Prizma', en:'Prism', colors:['#374bb8','#f15fca','#83fff0'], style:5 },
+  { name:'Andromeda', en:'Andromeda', colors:['#20134c','#cf54ff','#ace7ff'], style:3 },
+  { name:'Orion', en:'Orion', colors:['#153960','#ff7e9b','#fff3cb'], style:3 },
+  { name:'Kızıl Nebula', en:'Crimson Nebula', colors:['#450f45','#e84574','#ffb780'], style:0 },
+  { name:'Mavi Nebula', en:'Blue Nebula', colors:['#131d6a','#586bff','#7ef9ff'], style:0 },
+  { name:'Yıldız Patlaması', en:'Starburst', colors:['#6b2361','#fa8b45','#fffbc2'], style:3 },
+  { name:'Ay Tozu', en:'Moon Dust', colors:['#39415f','#a1b0da','#f0eaff'], style:3 },
+  { name:'Kuyruklu Yıldız', en:'Comet', colors:['#114b66','#39d1d5','#f6ffd4'], style:5 },
+  { name:'Güneş Rüzgarı', en:'Solar Wind', colors:['#622640','#ef7044','#fff39d'], style:6 },
+  { name:'Kutup Gecesi', en:'Polar Night', colors:['#10264f','#29b89d','#d0a6ff'], style:6 },
+  { name:'Samanyolu', en:'Milky Way', colors:['#31275d','#bc8fe5','#ffe6cc'], style:3 },
+  { name:'Vaporwave', en:'Vaporwave', colors:['#54239e','#ff77c8','#69e4ff'], style:7 },
+  { name:'Synthwave', en:'Synthwave', colors:['#382070','#f348bd','#ffb564'], style:2 },
+  { name:'Miami', en:'Miami', colors:['#125d78','#20ddcf','#ff87b8'], style:6 },
+  { name:'Gece Kulübü', en:'Night Club', colors:['#401060','#ce2dff','#70a5ff'], style:2 },
+  { name:'Ultraviyole', en:'Ultraviolet', colors:['#30116b','#8744ef','#ecb7ff'], style:9 },
+  { name:'Asit Pop', en:'Acid Pop', colors:['#5c2686','#c3f73b','#ff71dc'], style:7 },
+  { name:'Neon Mercan', en:'Neon Coral', colors:['#732b65','#ff6983','#ffc49c'], style:2 },
+  { name:'Dijital Nane', en:'Digital Mint', colors:['#154e6a','#46f1b7','#dbfff3'], style:7 },
+  { name:'Pembe Voltaj', en:'Pink Voltage', colors:['#57145d','#ff42b0','#ffe5fc'], style:9 },
+  { name:'Turkuaz Voltaj', en:'Turquoise Voltage', colors:['#0c3e66','#08cfe0','#dbffff'], style:9 },
+  { name:'Yakut', en:'Ruby', colors:['#5a1135','#d72e59','#ffb2c0'], style:1 },
+  { name:'Safir', en:'Sapphire', colors:['#152f70','#347eff','#c2e2ff'], style:1 },
+  { name:'Ametist', en:'Amethyst', colors:['#472568','#af6cec','#f5d4ff'], style:8 },
+  { name:'Opal', en:'Opal', colors:['#326b82','#d0a8ef','#daffcd'], style:8 },
+  { name:'İnci', en:'Pearl', colors:['#5b688d','#ddbad1','#f5fff3'], style:1 },
+  { name:'Obsidyen', en:'Obsidian', colors:['#211d36','#64607f','#d5b6ee'], style:1 },
+  { name:'Bakır', en:'Copper', colors:['#6c3429','#d98155','#ffe2ba'], style:1 },
+  { name:'Bronz', en:'Bronze', colors:['#51452a','#bda252','#fff2c8'], style:1 },
+  { name:'Titanyum', en:'Titanium', colors:['#31394e','#7c98b5','#deeaff'], style:8 },
+  { name:'Elmas', en:'Diamond', colors:['#2b527e','#a4e2ff','#ffffff'], style:8 },
+  { name:'Tropik Lagün', en:'Tropical Lagoon', colors:['#0d5567','#30d5aa','#d8fda1'], style:10 },
+  { name:'Derin Deniz', en:'Deep Sea', colors:['#112e56','#2874ad','#80e3ed'], style:6 },
+  { name:'Mercan Resifi', en:'Coral Reef', colors:['#244c79','#ff837e','#fff0b4'], style:10 },
+  { name:'Denizanası', en:'Jellyfish', colors:['#34216e','#b876e9','#a5fff2'], style:9 },
+  { name:'Mavi Dalga', en:'Blue Wave', colors:['#0b426c','#1ea7e4','#e2ffff'], style:10 },
+  { name:'Yağmur Ormanı', en:'Rainforest', colors:['#184c3f','#59b967','#d4ee91'], style:6 },
+  { name:'Bambu', en:'Bamboo', colors:['#3c5631','#92c566','#e9f7ae'], style:0 },
+  { name:'Yosun Işığı', en:'Moss Glow', colors:['#254b39','#84dc6c','#eeffd1'], style:3 },
+  { name:'Kutup Işığı', en:'Polar Glow', colors:['#264b76','#66e8c4','#e7c5ff'], style:11 },
+  { name:'Çöl Serabı', en:'Desert Mirage', colors:['#81504a','#e6a572','#ffe9b3'], style:10 },
+  { name:'Pamuk Şeker', en:'Cotton Candy', colors:['#7265a7','#f6a5db','#a9efff'], style:0 },
+  { name:'Şeftali', en:'Peach', colors:['#955b73','#ffb299','#fff0cc'], style:0 },
+  { name:'Çilek Kreması', en:'Strawberry Cream', colors:['#8d3c65','#f687a8','#ffe5cb'], style:0 },
+  { name:'Yaban Mersini', en:'Blueberry', colors:['#382864','#7e79dc','#dfc8ff'], style:6 },
+  { name:'Limon Sorbe', en:'Lemon Sorbet', colors:['#5e773a','#d6ed7b','#fff9d3'], style:0 },
+  { name:'Nane Bulutu', en:'Mint Cloud', colors:['#3c7882','#93e7cc','#eaffec'], style:0 },
+  { name:'Gül Suyu', en:'Rosewater', colors:['#6e3c75','#d789bc','#ffe1e8'], style:6 },
+  { name:'Leylak', en:'Lilac', colors:['#66528e','#c1a4e8','#f8e5ff'], style:11 },
+  { name:'Kayısı', en:'Apricot', colors:['#97643e','#f6be75','#fff4cd'], style:0 },
+  { name:'İpek Şampanya', en:'Champagne Silk', colors:['#817053','#d9c298','#fff4dc'], style:0 },
+  { name:'Kaleidoskop', en:'Kaleidoscope', colors:['#61349e','#ee769a','#7ff0d7'], style:11 },
+  { name:'Renk Yankısı', en:'Color Echo', colors:['#224f91','#b685f1','#ffc583'], style:10 },
+  { name:'Sıvı Mozaik', en:'Liquid Mosaic', colors:['#1d7279','#c878cf','#ffe39a'], style:8 },
+  { name:'Spektrum', en:'Spectrum', colors:['#315aa5','#ed6b94','#b6f784'], style:5 },
+  { name:'Foton', en:'Photon', colors:['#1d5572','#61d4ff','#fff6cc'], style:9 },
+  { name:'Manyetik Alan', en:'Magnetic Field', colors:['#3e2c78','#cb63ea','#8af7df'], style:6 },
+  { name:'Saten Alev', en:'Satin Flame', colors:['#752549','#f17c66','#ffdcad'], style:4 },
+  { name:'Mor Şimşek', en:'Purple Lightning', colors:['#33217c','#9865ff','#fae4ff'], style:9 },
+  { name:'Kristal Rüya', en:'Crystal Dream', colors:['#426b9a','#e3a1dd','#baffef'], style:8 },
+  { name:'Ayna Bahçesi', en:'Mirror Garden', colors:['#315e71','#97d5a7','#ffc5e1'], style:11 }
+];
+// Her kaleydoskop: simetri, dönüş hızı, geometri ve yüzey görünümü.
+const KALEIDOSCOPE_THEMES = [
+  ['Kristal Mandala','Crystal Mandala',['#352974','#a67ff0','#a9ffe3'],[8,0.06,0,3]],
+  ['Altın Mandala','Golden Mandala',['#67421e','#edb759','#fff3c4'],[12,-0.04,0,1]],
+  ['Lotus Mandala','Lotus Mandala',['#633b88','#f4a0cb','#fff2de'],[10,0.04,3,0]],
+  ['Neon Mandala','Neon Mandala',['#292277','#ee52cd','#73ffec'],[16,0.07,0,2]],
+  ['Zümrüt Mandala','Emerald Mandala',['#0b5148','#5fe0ab','#efffc0'],[6,-0.05,0,1]],
+  ['Safir Mandala','Sapphire Mandala',['#142764','#5b9dff','#c1faff'],[8,0.08,0,3]],
+  ['Gül Penceresi','Rose Window',['#631b57','#f269a1','#ffd8a8'],[12,0,0,3]],
+  ['Kar Tanesi','Snowflake',['#255275','#8ae4ff','#f2ffff'],[6,0,0,3]],
+  ['Yıldız Tacı','Star Crown',['#42356a','#dfb078','#fff1cc'],[5,0.07,0,1]],
+  ['Tavus Kuşu','Peacock',['#0b4666','#41d9a7','#d5a5ff'],[9,-0.05,3,1]],
+  ['Sakura Çarkı','Sakura Wheel',['#67406f','#f397c0','#ffe8ee'],[7,0.06,3,0]],
+  ['Kutup Rozeti','Polar Rosette',['#194573','#67dfd5','#eed1ff'],[18,-0.04,0,0]],
+  ['Spiral Galaksi','Spiral Galaxy',['#25215c','#b367ef','#b8eeff'],[8,0.10,1,0]],
+  ['Altın Sarmal','Golden Spiral',['#714822','#e7af59','#fff0b1'],[6,-0.08,1,1]],
+  ['Neon Sarmal','Neon Spiral',['#252980','#dd50ed','#71ffdd'],[12,0.13,1,2]],
+  ['İpek Girdabı','Silk Vortex',['#4a3987','#bd9cf1','#ffcfe6'],[5,-0.06,1,0]],
+  ['Alev Sarmalı','Flame Spiral',['#6b204b','#ff7c4f','#ffe9a3'],[10,0.10,1,1]],
+  ['Zaman Tüneli','Time Tunnel',['#1d426b','#8a79e6','#8bffed'],[8,0.04,2,0]],
+  ['Sonsuz Prizma','Infinite Prism',['#413180','#ee8acb','#9deedc'],[12,-0.05,2,3]],
+  ['Neon Portal','Neon Portal',['#2c257c','#ec53b5','#65eafa'],[6,0.09,2,2]],
+  ['Kristal Tünel','Crystal Tunnel',['#315a88','#acd4ff','#fff0ff'],[16,0.03,2,3]],
+  ['Mercan Çiçeği','Coral Blossom',['#694277','#ff9890','#ffedb9'],[8,-0.04,3,0]],
+  ['Lavanta Çiçeği','Lavender Blossom',['#49356f','#b89ce7','#fce2ff'],[12,0.04,3,0]],
+  ['Elektrik Çiçeği','Electric Blossom',['#233b80','#5acbf9','#e4ffb9'],[10,-0.08,3,2]],
+  ['Kristal Döşeme','Crystal Mosaic',['#2d4872','#a997e2','#bcfff0'],[6,0.03,4,3]],
+  ['Mozaik Sarayı','Mosaic Palace',['#6a304f','#dda160','#a8e5e7'],[8,-0.04,4,1]],
+  ['Neon Petek','Neon Honeycomb',['#393174','#e47ad9','#98ffbc'],[6,0.05,4,2]],
+  ['İkiz Yıldız','Twin Star',['#492468','#e787be','#9de2ff'],[8,0.05,5,0]],
+  ['Çift Ayna','Double Mirror',['#2d5c70','#8ce8d5','#ffd8e9'],[12,-0.07,5,1]],
+  ['Nefes Alan Lotus','Breathing Lotus',['#593a7d','#e49aba','#fbf2c8'],[10,0.025,6,0]],
+  ['Nabız Mandala','Pulse Mandala',['#1c4a68','#78dccc','#ffc9f0'],[16,-0.035,6,2]],
+  ['İnci Çarkı','Pearl Wheel',['#5a567e','#c5b8e8','#eaffdf'],[24,0.025,0,1]]
+].map(([name,en,colors,kaleido]) => ({name,en,colors,style:11,kaleido}));
+EXTRA_THEMES.push(...KALEIDOSCOPE_THEMES);
+THEMES.push(...EXTRA_THEMES.map(theme => theme.name));
 const cfg = {
   theme: 'Duman',
   pattern: 12,
@@ -439,6 +567,7 @@ const FS = {
   clear: FH + `uniform sampler2D uTexture; uniform float value;
     void main() { gl_FragColor = value * texture2D(uTexture, vUv); }`,
   display: FH + `uniform sampler2D uTexture, uVelocity; uniform vec2 texelSize, res; uniform float uTheme, cell, aspect, uTime; uniform vec3 uBackground;
+    uniform vec3 uPaletteA, uPaletteB, uPaletteC; uniform float uStyle; uniform vec4 uKaleido;
     vec3 tone(vec3 c) { return 1.0 - exp(-c * 1.6); }   // yumuşak tonlama
     float lum(vec3 c) { return dot(c, vec3(0.299, 0.587, 0.114)); }
     vec3 dyeAt(vec2 p) { return tone(texture2D(uTexture, p).rgb); }
@@ -537,6 +666,116 @@ const FS = {
         float pulse = 0.5 + 0.5 * sin(uv.x * 10.0 + uv.y * 8.0 + uTime * 1.25 + l * 10.0);
         vec3 p = mix(vec3(0.02, 0.88, 1.0), vec3(1.0, 0.08, 0.72), pulse);
         o = p * (0.18 + 1.55 * l + 0.35 * sp) + c * 0.08;
+      } else if (t >= 16) {                               // Ek renk paletleri ve yüzey efektleri
+        float L = lum(dyeAt(vL)), R = lum(dyeAt(vR));
+        float T = lum(dyeAt(vT)), B = lum(dyeAt(vB));
+        vec2 grad = vec2(R - L, T - B);
+        float edge = clamp(length(grad) * 9.0, 0.0, 1.0);
+        float phase = l * 3.5 + (c.r - c.b) * 0.8;
+        float ribbon = 0.5 + 0.5 * sin(phase * 6.28318 + uTime * 0.18);
+        vec3 palette = mix(uPaletteA, uPaletteB, smoothstep(0.0, 0.65, ribbon));
+        palette = mix(palette, uPaletteC, smoothstep(0.62, 1.0, ribbon));
+        float mask = smoothstep(0.0, 0.16, l);
+        o = palette * (0.35 + 1.15 * l) * mask;
+        if (uStyle < 0.5) {                               // İpek: yumuşak, parlak kıvrımlar
+          float silk = pow(ribbon, 9.0) * edge;
+          o += uPaletteC * silk * 0.55;
+        } else if (uStyle < 1.5) {                        // Metal: yönlü yansıma
+          vec3 normal = normalize(vec3(-grad * 16.0, 0.65));
+          float shine = pow(max(dot(normal, normalize(vec3(-0.5, 0.7, 0.5))), 0.0), 18.0);
+          o = palette * (0.28 + 0.85 * ribbon + edge * 0.35) * mask;
+          o += uPaletteC * shine * mask * 0.85;
+        } else if (uStyle < 2.5) {                        // Neon: ışıklı akış kenarları
+          float bands = pow(0.5 + 0.5 * sin(l * (30.0 + cell)), 14.0);
+          o = palette * (0.16 * mask + 1.35 * edge + 0.65 * bands * mask);
+          o += uPaletteC * pow(edge, 3.0) * 0.45;
+        } else if (uStyle < 3.5) {                        // Yıldız tozu: akışa bağlı sabit parıltılar
+          vec2 grid = fc / max(2.0, cell * 0.35);
+          float seed = fract(sin(dot(floor(grid), vec2(127.1, 311.7))) * 43758.5453);
+          float star = 1.0 - smoothstep(0.02, 0.18, length(fract(grid) - 0.5));
+          float twinkle = 0.65 + 0.35 * sin(uTime * 1.4 + seed * 40.0);
+          o += uPaletteC * star * step(0.94, seed) * twinkle * mask * 1.4;
+        } else if (uStyle < 4.5) {                        // Kor: sıcak çekirdekler
+          float heat = clamp(l * 1.5, 0.0, 1.0);
+          o = mix(uPaletteA, uPaletteB, smoothstep(0.0, 0.55, heat));
+          o = mix(o, uPaletteC, smoothstep(0.5, 1.0, heat));
+          o *= mask * (0.4 + heat + edge * 0.6);
+        } else if (uStyle < 5.5) {                        // Prizma: renk ayrışması ve ince dalgalar
+          vec2 offset = grad * 0.055;
+          vec3 split = vec3(dyeAt(uv + offset).r, c.g, dyeAt(uv - offset).b);
+          float bands = pow(0.5 + 0.5 * sin(phase * (12.0 + cell * 0.5)), 8.0);
+          o += split * 0.3 + uPaletteC * bands * edge * 0.5;
+        } else if (uStyle < 6.5) {                        // Akışa yönlenen saten lifler
+          vec2 velocity = texture2D(uVelocity, uv).xy;
+          vec2 dir = velocity / max(length(velocity), 0.001);
+          float fiber = 0.5 + 0.5 * sin(dot(fc, vec2(-dir.y, dir.x)) / max(cell, 1.0) + phase * 15.0);
+          o *= 0.65 + 0.55 * fiber;
+          o += uPaletteC * pow(fiber, 12.0) * edge * 0.45;
+        } else if (uStyle < 7.5) {                        // Dijital: parlak tarama çizgileri
+          float scan = 0.5 + 0.5 * cos(fc.y * 6.28318 / max(cell * 0.4, 2.0));
+          float circuit = pow(0.5 + 0.5 * sin(l * 55.0), 18.0);
+          o *= 0.55 + 0.45 * scan;
+          o += uPaletteC * circuit * mask * (0.4 + edge);
+        } else if (uStyle < 8.5) {                        // Kristal: çok yüzeyli renk bantları
+          float facets = floor(ribbon * 7.0) / 6.0;
+          vec3 gem = mix(uPaletteA, uPaletteB, min(facets * 1.6, 1.0));
+          gem = mix(gem, uPaletteC, smoothstep(0.55, 1.0, facets));
+          float rim = 1.0 - smoothstep(0.0, 0.1, fract(ribbon * 7.0));
+          o = gem * (0.45 + l) * mask + uPaletteC * rim * edge * 0.6;
+        } else if (uStyle < 9.5) {                        // Elektrik: ince ışık damarları
+          float vein = pow(0.5 + 0.5 * sin(phase * 28.0 + sin(phase * 9.0) * 2.0), 28.0);
+          o *= 0.45;
+          o += uPaletteB * edge * 0.8 + uPaletteC * vein * mask * 1.25;
+        } else if (uStyle < 10.5) {                       // Dalga: akışın etrafında halkalar
+          float wave = 0.5 + 0.5 * sin(l * (18.0 + cell) - uTime * 0.65);
+          o *= 0.45 + wave * 0.65;
+          o += uPaletteC * pow(wave, 10.0) * mask * 0.3;
+        } else {                                         // Kaleydoskop: farklı geometriler ve yüzeyler
+          vec2 p = uv - 0.5; p.x *= aspect;
+          float mode = uKaleido.z;
+          if (mode > 3.5 && mode < 4.5) {
+            p = (fract(p * 2.0 + 0.5) - 0.5) * 0.9;
+          } else if (mode > 4.5 && mode < 5.5) {
+            p.x = (abs(p.x) - aspect * 0.24) * 1.25;
+          }
+          float radius = length(p);
+          float angle = atan(p.y, p.x + 0.000001) + uTime * uKaleido.y;
+          float sector = 6.2831853 / max(uKaleido.x, 3.0);
+          if (mode > 0.5 && mode < 1.5) angle += radius * 7.0;
+          angle = abs(mod(angle + sector * 0.5, sector) - sector * 0.5);
+          if (mode > 1.5 && mode < 2.5) {
+            radius = abs(fract(radius * 2.8 - uTime * 0.045) - 0.5) * 0.85;
+          } else if (mode > 2.5 && mode < 3.5) {
+            radius *= 0.8 + 0.22 * cos(angle * uKaleido.x * 2.0);
+          } else if (mode > 5.5) {
+            radius *= 0.9 + 0.12 * sin(uTime * 0.8);
+          }
+          vec2 q = radius * vec2(cos(angle), sin(angle)); q.x /= aspect;
+          // Dört kaynak bölgesini birleştir: simetrik desen daha kolay dolsun.
+          vec3 reflected = max(dyeAt(clamp(0.5 + q, 0.001, 0.999)), dyeAt(clamp(0.5 - q, 0.001, 0.999)));
+          reflected = max(reflected, dyeAt(clamp(vec2(0.5 + q.x, 0.5 - q.y), 0.001, 0.999)));
+          reflected = max(reflected, dyeAt(clamp(vec2(0.5 - q.x, 0.5 + q.y), 0.001, 0.999)));
+          float intensity = lum(reflected);
+          float hue = 0.5 + 0.5 * sin(intensity * 18.0 + (reflected.r - reflected.b) * 4.0);
+          vec3 kaleido = mix(uPaletteA, uPaletteB, hue);
+          kaleido = mix(kaleido, uPaletteC, smoothstep(0.7, 1.0, hue));
+          mask = smoothstep(0.0, 0.16, intensity);
+          o = kaleido * (0.35 + intensity * 1.2) * mask;
+          float bands = 0.5 + 0.5 * sin(intensity * (20.0 + cell));
+          if (uKaleido.w > 0.5 && uKaleido.w < 1.5) {
+            o *= 0.6 + bands * 0.6;
+            o += uPaletteC * pow(bands, 14.0) * mask * 0.55;
+          } else if (uKaleido.w > 1.5 && uKaleido.w < 2.5) {
+            o = kaleido * (0.18 + pow(bands, 12.0) * 1.35) * mask;
+            o += uPaletteC * pow(bands, 24.0) * mask * 0.3;
+          } else if (uKaleido.w > 2.5) {
+            float facets = floor(hue * 6.0) / 5.0;
+            o = mix(uPaletteA, uPaletteB, min(facets * 1.5, 1.0));
+            o = mix(o, uPaletteC, smoothstep(0.55, 1.0, facets));
+            o *= mask * (0.35 + intensity * 1.2);
+          }
+          l = intensity;
+        }
       }
       float bgStrength = clamp(l * 1.55 + length(o) * 0.08, 0.0, 1.0);
       o = mix(uBackground, o, bgStrength);
@@ -599,9 +838,28 @@ function getRes(res) {
 }
 
 let velocity, dye, divergence, curlFBO, pressure;
+function disposeFBO(target) {
+  if (!target) return;
+  gl.deleteTexture(target.tex);
+  gl.deleteFramebuffer(target.fbo);
+}
 function initFramebuffers() {
+  // Kalite geçişlerinde yüksek çözünürlüklü eski GPU kaynaklarını serbest bırak.
+  [velocity, dye, pressure].forEach(target => {
+    if (target) { disposeFBO(target.read); disposeFBO(target.write); }
+  });
+  disposeFBO(divergence); disposeFBO(curlFBO);
   const sim = getRes(QUALITY[cfg.quality]);
   const dyeR = getRes(QUALITY[cfg.quality] * (isMobile ? 4 : 5));
+  if (cfg.quality === 'Ultra') {
+    // Uzun ekranlarda doku boyutu donanım sınırını aşmasın; oranı koru.
+    const limit = Math.min(gl.getParameter(gl.MAX_TEXTURE_SIZE), gl.getParameter(gl.MAX_RENDERBUFFER_SIZE));
+    [sim, dyeR].forEach(size => {
+      const scale = Math.min(1, limit / Math.max(size.w, size.h));
+      size.w = Math.max(1, Math.floor(size.w * scale));
+      size.h = Math.max(1, Math.floor(size.h * scale));
+    });
+  }
   velocity = createDouble(sim.w, sim.h, LIN);
   dye = createDouble(dyeR.w, dyeR.h, LIN);
   divergence = createFBO(sim.w, sim.h, gl.NEAREST);
@@ -632,7 +890,8 @@ function step(dt) {
 
   u = use(P.pressure, velocity.read);
   gl.uniform1i(u.uDivergence, bind(0, divergence));
-  for (let i = 0; i < cfg.pressureIters; i++) {
+  const pressureIters = cfg.quality === 'Ultra' ? Math.max(cfg.pressureIters, isMobile ? 20 : 32) : cfg.pressureIters;
+  for (let i = 0; i < pressureIters; i++) {
     gl.uniform1i(u.uPressure, bind(1, pressure.read)); blit(pressure.write); pressure.swap();
   }
 
@@ -662,6 +921,16 @@ function render() {
   const bgN = parseInt(cfg.background.slice(1), 16);
   gl.uniform3f(u.uBackground, ((bgN >> 16) & 255) / 255, ((bgN >> 8) & 255) / 255, (bgN & 255) / 255);
   gl.uniform1f(u.uTime, performance.now() * 0.001);
+  const extraTheme = EXTRA_THEMES[THEMES.indexOf(cfg.theme) - 16];
+  if (extraTheme) {
+    ['uPaletteA', 'uPaletteB', 'uPaletteC'].forEach((key, index) => {
+      const n = parseInt(extraTheme.colors[index].slice(1), 16);
+      gl.uniform3f(u[key], ((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255);
+    });
+    gl.uniform1f(u.uStyle, extraTheme.style);
+    const kaleido = extraTheme.kaleido || [6, 0, 0, 0];
+    gl.uniform4f(u.uKaleido, ...kaleido);
+  }
   blit(null);
 }
 
@@ -721,17 +990,17 @@ canvas.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') po
   const LANGS = ['en','zh','hi','es','fr','ar','bn','pt','ru','id','tr'];
   const LANGUAGE_NAMES = { en:'English', zh:'中文', hi:'हिन्दी', es:'Español', fr:'Français', ar:'العربية', bn:'বাংলা', pt:'Português', ru:'Русский', id:'Bahasa Indonesia', tr:'Türkçe' };
   const I18N = {
-    en:{ title:'Fluid Simulation', brandSub:'Shape the flow with touch', appearance:'Appearance', flowMotion:'Flow & Motion', quality:'Quality', qualityHint:'Starts high', rainbow:'Rainbow', neon:'Neon', single:'Single color', customColor:'Custom color', pattern:'Pattern size', speed:'Simulation speed', curl:'Vortex', radius:'Trail thickness', dissipation:'Dissipation', low:'Low', medium:'Medium', high:'High', reset:'↺ Reset', background:'Background', backgroundHint:'Canvas atmosphere', bgBlack:'Black', bgMidnight:'Midnight', bgDeepBlue:'Deep blue', bgWhite:'White', backgroundColor:'Custom background', shortcuts:'H hide/show · T theme · F fullscreen · R record · S screenshot', hideControls:'Hide controls', openControls:'Open controls', fullscreen:'Fullscreen', exitFullscreen:'Exit fullscreen', language:'Language', hint:'Touch or drag to shape the flow', recOn:'Recording mode on', recOff:'Recording mode off', screenshotSaved:'Screenshot saved', hud:(theme,q)=>`${theme} • ${q} quality • H: Controls` },
-    zh:{ title:'流体模拟', brandSub:'触摸塑造流动', appearance:'外观', flowMotion:'流动与运动', quality:'画质', qualityHint:'默认高画质', rainbow:'彩虹', neon:'霓虹', single:'单色', customColor:'自定义颜色', pattern:'图案大小', speed:'模拟速度', curl:'涡流', radius:'轨迹粗细', dissipation:'消散', low:'低', medium:'中', high:'高', reset:'↺ 重置', background:'背景', backgroundHint:'画布氛围', bgBlack:'黑色', bgMidnight:'午夜', bgDeepBlue:'深蓝', bgWhite:'白色', backgroundColor:'自定义背景', shortcuts:'H 隐藏/显示 · T 切换主题 · F 全屏 · R 录制 · S 截图', hideControls:'隐藏控制', openControls:'打开控制', fullscreen:'全屏', exitFullscreen:'退出全屏', language:'语言', hint:'触摸或拖动以塑造流动', recOn:'录制模式已开启', recOff:'录制模式已关闭', screenshotSaved:'截图已保存', hud:(theme,q)=>`${theme} • ${q} 画质 • H：控制` },
-    hi:{ title:'द्रव सिमुलेशन', brandSub:'स्पर्श से प्रवाह को आकार दें', appearance:'दृश्य', flowMotion:'प्रवाह और गति', quality:'गुणवत्ता', qualityHint:'डिफ़ॉल्ट: उच्च', rainbow:'इंद्रधनुष', neon:'नियॉन', single:'एक रंग', customColor:'कस्टम रंग', pattern:'पैटर्न आकार', speed:'सिमुलेशन गति', curl:'भंवर', radius:'ट्रेल मोटाई', dissipation:'क्षय', low:'कम', medium:'मध्यम', high:'उच्च', reset:'↺ रीसेट', background:'पृष्ठभूमि', backgroundHint:'कैनवास वातावरण', bgBlack:'काला', bgMidnight:'मिडनाइट', bgDeepBlue:'गहरा नीला', bgWhite:'सफेद', backgroundColor:'कस्टम पृष्ठभूमि', shortcuts:'H छिपाएँ/दिखाएँ · T थीम · F फ़ुलस्क्रीन · R रिकॉर्ड · S स्क्रीनशॉट', hideControls:'कंट्रोल छिपाएँ', openControls:'कंट्रोल खोलें', fullscreen:'फ़ुलस्क्रीन', exitFullscreen:'फ़ुलस्क्रीन से बाहर', language:'भाषा', hint:'स्पर्श करें या खींचें', recOn:'रिकॉर्डिंग मोड चालू', recOff:'रिकॉर्डिंग मोड बंद', screenshotSaved:'स्क्रीनशॉट सहेजा गया', hud:(theme,q)=>`${theme} • ${q} गुणवत्ता • H: कंट्रोल` },
-    es:{ title:'Simulación de fluidos', brandSub:'Moldea el flujo con el tacto', appearance:'Apariencia', flowMotion:'Flujo y movimiento', quality:'Calidad', qualityHint:'Inicio: alta', rainbow:'Arcoíris', neon:'Neón', single:'Un color', customColor:'Color personalizado', pattern:'Tamaño del patrón', speed:'Velocidad', curl:'Remolino', radius:'Grosor de estela', dissipation:'Disipación', low:'Baja', medium:'Media', high:'Alta', reset:'↺ Restablecer', background:'Fondo', backgroundHint:'Atmósfera del lienzo', bgBlack:'Negro', bgMidnight:'Medianoche', bgDeepBlue:'Azul profundo', bgWhite:'Blanco', backgroundColor:'Fondo personalizado', shortcuts:'H ocultar/mostrar · T tema · F pantalla completa · R grabar · S captura', hideControls:'Ocultar controles', openControls:'Abrir controles', fullscreen:'Pantalla completa', exitFullscreen:'Salir de pantalla completa', language:'Idioma', hint:'Toca o arrastra para moldear el flujo', recOn:'Modo grabación activado', recOff:'Modo grabación desactivado', screenshotSaved:'Captura guardada', hud:(theme,q)=>`${theme} • Calidad ${q} • H: controles` },
-    fr:{ title:'Simulation de fluides', brandSub:'Façonnez le flux au toucher', appearance:'Apparence', flowMotion:'Flux et mouvement', quality:'Qualité', qualityHint:'Démarrage : élevée', rainbow:'Arc-en-ciel', neon:'Néon', single:'Couleur unique', customColor:'Couleur personnalisée', pattern:'Taille du motif', speed:'Vitesse de simulation', curl:'Tourbillon', radius:'Épaisseur de la traînée', dissipation:'Dissipation', low:'Faible', medium:'Moyenne', high:'Élevée', reset:'↺ Réinitialiser', background:'Arrière-plan', backgroundHint:'Ambiance du canevas', bgBlack:'Noir', bgMidnight:'Minuit', bgDeepBlue:'Bleu profond', bgWhite:'Blanc', backgroundColor:'Arrière-plan personnalisé', shortcuts:'H masquer/afficher · T thème · F plein écran · R enregistrer · S capture', hideControls:'Masquer les contrôles', openControls:'Ouvrir les contrôles', fullscreen:'Plein écran', exitFullscreen:'Quitter le plein écran', language:'Langue', hint:'Touchez ou glissez pour façonner le flux', recOn:'Mode enregistrement activé', recOff:'Mode enregistrement désactivé', screenshotSaved:'Capture enregistrée', hud:(theme,q)=>`${theme} • Qualité ${q} • H : contrôles` },
-    ar:{ title:'محاكاة السوائل', brandSub:'شكّل التدفق باللمس', appearance:'المظهر', flowMotion:'التدفق والحركة', quality:'الجودة', qualityHint:'البدء: عالية', rainbow:'قوس قزح', neon:'نيون', single:'لون واحد', customColor:'لون مخصص', pattern:'حجم النمط', speed:'سرعة المحاكاة', curl:'دوامة', radius:'سُمك الأثر', dissipation:'التلاشي', low:'منخفضة', medium:'متوسطة', high:'عالية', reset:'↺ إعادة ضبط', background:'الخلفية', backgroundHint:'أجواء اللوحة', bgBlack:'أسود', bgMidnight:'ليلي', bgDeepBlue:'أزرق عميق', bgWhite:'أبيض', backgroundColor:'خلفية مخصصة', shortcuts:'H إخفاء/إظهار · T تبديل النمط · F ملء الشاشة · R تسجيل · S لقطة شاشة', hideControls:'إخفاء عناصر التحكم', openControls:'فتح عناصر التحكم', fullscreen:'ملء الشاشة', exitFullscreen:'الخروج من ملء الشاشة', language:'اللغة', hint:'المس أو اسحب لتشكيل التدفق', recOn:'وضع التسجيل مفعّل', recOff:'وضع التسجيل متوقف', screenshotSaved:'تم حفظ لقطة الشاشة', hud:(theme,q)=>`${theme} • الجودة ${q} • H: التحكم` },
-    bn:{ title:'ফ্লুইড সিমুলেশন', brandSub:'স্পর্শে প্রবাহকে আকার দিন', appearance:'দৃশ্য', flowMotion:'প্রবাহ ও গতি', quality:'গুণমান', qualityHint:'শুরু: উচ্চ', rainbow:'রেইনবো', neon:'নিয়ন', single:'এক রঙ', customColor:'কাস্টম রঙ', pattern:'প্যাটার্নের আকার', speed:'সিমুলেশন গতি', curl:'ঘূর্ণি', radius:'ট্রেইলের পুরুত্ব', dissipation:'ক্ষয়', low:'নিম্ন', medium:'মাঝারি', high:'উচ্চ', reset:'↺ রিসেট', background:'পটভূমি', backgroundHint:'ক্যানভাসের আবহ', bgBlack:'কালো', bgMidnight:'মধ্যরাত', bgDeepBlue:'গাঢ় নীল', bgWhite:'সাদা', backgroundColor:'কাস্টম পটভূমি', shortcuts:'H লুকান/দেখান · T থিম · F ফুলস্ক্রিন · R রেকর্ড · S স্ক্রিনশট', hideControls:'কন্ট্রোল লুকান', openControls:'কন্ট্রোল খুলুন', fullscreen:'ফুলস্ক্রিন', exitFullscreen:'ফুলস্ক্রিন থেকে বের হন', language:'ভাষা', hint:'স্পর্শ করুন বা টেনে আনুন', recOn:'রেকর্ডিং মোড চালু', recOff:'রেকর্ডিং মোড বন্ধ', screenshotSaved:'স্ক্রিনশট সংরক্ষিত হয়েছে', hud:(theme,q)=>`${theme} • ${q} মান • H: কন্ট্রোল` },
-    pt:{ title:'Simulação de fluidos', brandSub:'Modele o fluxo com o toque', appearance:'Aparência', flowMotion:'Fluxo e movimento', quality:'Qualidade', qualityHint:'Início: alta', rainbow:'Arco-íris', neon:'Neon', single:'Uma cor', customColor:'Cor personalizada', pattern:'Tamanho do padrão', speed:'Velocidade da simulação', curl:'Vórtice', radius:'Espessura do rastro', dissipation:'Dissipação', low:'Baixa', medium:'Média', high:'Alta', reset:'↺ Redefinir', background:'Fundo', backgroundHint:'Atmosfera da tela', bgBlack:'Preto', bgMidnight:'Meia-noite', bgDeepBlue:'Azul profundo', bgWhite:'Branco', backgroundColor:'Fundo personalizado', shortcuts:'H ocultar/mostrar · T tema · F tela cheia · R gravar · S captura', hideControls:'Ocultar controles', openControls:'Abrir controles', fullscreen:'Tela cheia', exitFullscreen:'Sair da tela cheia', language:'Idioma', hint:'Toque ou arraste para moldar o fluxo', recOn:'Modo de gravação ativado', recOff:'Modo de gravação desativado', screenshotSaved:'Captura salva', hud:(theme,q)=>`${theme} • Qualidade ${q} • H: controles` },
-    ru:{ title:'Симуляция жидкости', brandSub:'Формируйте поток касанием', appearance:'Вид', flowMotion:'Поток и движение', quality:'Качество', qualityHint:'Старт: высокое', rainbow:'Радуга', neon:'Неон', single:'Один цвет', customColor:'Свой цвет', pattern:'Размер узора', speed:'Скорость симуляции', curl:'Вихрь', radius:'Толщина следа', dissipation:'Затухание', low:'Низкое', medium:'Среднее', high:'Высокое', reset:'↺ Сбросить', background:'Фон', backgroundHint:'Атмосфера холста', bgBlack:'Чёрный', bgMidnight:'Полночь', bgDeepBlue:'Тёмно-синий', bgWhite:'Белый', backgroundColor:'Свой фон', shortcuts:'H скрыть/показать · T тема · F полный экран · R запись · S скриншот', hideControls:'Скрыть управление', openControls:'Открыть управление', fullscreen:'Полный экран', exitFullscreen:'Выйти из полного экрана', language:'Язык', hint:'Коснитесь или проведите пальцем', recOn:'Режим записи включён', recOff:'Режим записи выключен', screenshotSaved:'Скриншот сохранён', hud:(theme,q)=>`${theme} • Качество: ${q} • H: управление` },
-    id:{ title:'Simulasi Fluida', brandSub:'Bentuk aliran dengan sentuhan', appearance:'Tampilan', flowMotion:'Aliran & Gerakan', quality:'Kualitas', qualityHint:'Mulai: tinggi', rainbow:'Pelangi', neon:'Neon', single:'Satu warna', customColor:'Warna kustom', pattern:'Ukuran pola', speed:'Kecepatan simulasi', curl:'Pusaran', radius:'Ketebalan jejak', dissipation:'Pelemahan', low:'Rendah', medium:'Sedang', high:'Tinggi', reset:'↺ Atur ulang', background:'Latar', backgroundHint:'Suasana kanvas', bgBlack:'Hitam', bgMidnight:'Tengah malam', bgDeepBlue:'Biru tua', bgWhite:'Putih', backgroundColor:'Latar kustom', shortcuts:'H sembunyikan/tampilkan · T tema · F layar penuh · R rekam · S tangkapan layar', hideControls:'Sembunyikan kontrol', openControls:'Buka kontrol', fullscreen:'Layar penuh', exitFullscreen:'Keluar layar penuh', language:'Bahasa', hint:'Sentuh atau seret untuk membentuk aliran', recOn:'Mode rekam aktif', recOff:'Mode rekam nonaktif', screenshotSaved:'Tangkapan layar disimpan', hud:(theme,q)=>`${theme} • Kualitas ${q} • H: kontrol` },
-    tr:{ title:'Akışkan Simülasyonu', brandSub:'Akışı dokunarak şekillendir', appearance:'Görünüm', flowMotion:'Akış & Hareket', quality:'Kalite', qualityHint:'Başlangıç: Yüksek', rainbow:'Gökkuşağı', neon:'Neon', single:'Tek renk', customColor:'Özel renk', pattern:'Desen boyutu', speed:'Simülasyon hızı', curl:'Girdap', radius:'İz kalınlığı', dissipation:'Sönme', low:'Düşük', medium:'Orta', high:'Yüksek', reset:'↺ Sıfırla', background:'Arka plan', backgroundHint:'Tuval atmosferi', bgBlack:'Siyah', bgMidnight:'Gece', bgDeepBlue:'Koyu mavi', bgWhite:'Beyaz', backgroundColor:'Özel arka plan', shortcuts:'H gizle/göster · T tema · F tam ekran · R kayıt · S ekran görüntüsü', hideControls:'Kontrolleri gizle', openControls:'Kontrolleri aç', fullscreen:'Tam ekran', exitFullscreen:'Tam ekrandan çık', language:'Dil', hint:'Akışı şekillendirmek için dokun veya sürükle', recOn:'Kayıt modu açık', recOff:'Kayıt modu kapalı', screenshotSaved:'Ekran görüntüsü kaydedildi', hud:(theme,q)=>`${theme} • ${q} kalite • H: Kontroller` }
+    en:{ title:'Fluid Simulation', brandSub:'Shape the flow with touch', appearance:'Appearance', flowMotion:'Flow & Motion', quality:'Quality', qualityHint:'Starts high', rainbow:'Rainbow', neon:'Neon', single:'Single color', customColor:'Custom color', pattern:'Pattern size', speed:'Simulation speed', curl:'Vortex', radius:'Trail thickness', dissipation:'Dissipation', low:'Low', medium:'Medium', high:'High', reset:'↺ Reset', background:'Background', backgroundHint:'Canvas atmosphere', bgBlack:'Black', bgMidnight:'Midnight', bgDeepBlue:'Deep blue', bgWhite:'White', backgroundColor:'Custom background', shortcuts:'H hide/show · T theme · F fullscreen · R record · S screenshot · M custom', hideControls:'Hide controls', openControls:'Open controls', fullscreen:'Fullscreen', exitFullscreen:'Exit fullscreen', language:'Language', hint:'Touch or drag to shape the flow', recOn:'Recording mode on', recOff:'Recording mode off', screenshotSaved:'Screenshot saved', hud:(theme,q)=>`${theme} • ${q} quality • H: Controls` },
+    zh:{ title:'流体模拟', brandSub:'触摸塑造流动', appearance:'外观', flowMotion:'流动与运动', quality:'画质', qualityHint:'默认高画质', rainbow:'彩虹', neon:'霓虹', single:'单色', customColor:'自定义颜色', pattern:'图案大小', speed:'模拟速度', curl:'涡流', radius:'轨迹粗细', dissipation:'消散', low:'低', medium:'中', high:'高', reset:'↺ 重置', background:'背景', backgroundHint:'画布氛围', bgBlack:'黑色', bgMidnight:'午夜', bgDeepBlue:'深蓝', bgWhite:'白色', backgroundColor:'自定义背景', shortcuts:'H 隐藏/显示 · T 切换主题 · F 全屏 · R 录制 · S 截图 · M 自定义', hideControls:'隐藏控制', openControls:'打开控制', fullscreen:'全屏', exitFullscreen:'退出全屏', language:'语言', hint:'触摸或拖动以塑造流动', recOn:'录制模式已开启', recOff:'录制模式已关闭', screenshotSaved:'截图已保存', hud:(theme,q)=>`${theme} • ${q} 画质 • H：控制` },
+    hi:{ title:'द्रव सिमुलेशन', brandSub:'स्पर्श से प्रवाह को आकार दें', appearance:'दृश्य', flowMotion:'प्रवाह और गति', quality:'गुणवत्ता', qualityHint:'डिफ़ॉल्ट: उच्च', rainbow:'इंद्रधनुष', neon:'नियॉन', single:'एक रंग', customColor:'कस्टम रंग', pattern:'पैटर्न आकार', speed:'सिमुलेशन गति', curl:'भंवर', radius:'ट्रेल मोटाई', dissipation:'क्षय', low:'कम', medium:'मध्यम', high:'उच्च', reset:'↺ रीसेट', background:'पृष्ठभूमि', backgroundHint:'कैनवास वातावरण', bgBlack:'काला', bgMidnight:'मिडनाइट', bgDeepBlue:'गहरा नीला', bgWhite:'सफेद', backgroundColor:'कस्टम पृष्ठभूमि', shortcuts:'H छिपाएँ/दिखाएँ · T थीम · F फ़ुलस्क्रीन · R रिकॉर्ड · S स्क्रीनशॉट · M कस्टम', hideControls:'कंट्रोल छिपाएँ', openControls:'कंट्रोल खोलें', fullscreen:'फ़ुलस्क्रीन', exitFullscreen:'फ़ुलस्क्रीन से बाहर', language:'भाषा', hint:'स्पर्श करें या खींचें', recOn:'रिकॉर्डिंग मोड चालू', recOff:'रिकॉर्डिंग मोड बंद', screenshotSaved:'स्क्रीनशॉट सहेजा गया', hud:(theme,q)=>`${theme} • ${q} गुणवत्ता • H: कंट्रोल` },
+    es:{ title:'Simulación de fluidos', brandSub:'Moldea el flujo con el tacto', appearance:'Apariencia', flowMotion:'Flujo y movimiento', quality:'Calidad', qualityHint:'Inicio: alta', rainbow:'Arcoíris', neon:'Neón', single:'Un color', customColor:'Color personalizado', pattern:'Tamaño del patrón', speed:'Velocidad', curl:'Remolino', radius:'Grosor de estela', dissipation:'Disipación', low:'Baja', medium:'Media', high:'Alta', reset:'↺ Restablecer', background:'Fondo', backgroundHint:'Atmósfera del lienzo', bgBlack:'Negro', bgMidnight:'Medianoche', bgDeepBlue:'Azul profundo', bgWhite:'Blanco', backgroundColor:'Fondo personalizado', shortcuts:'H ocultar/mostrar · T tema · F pantalla completa · R grabar · S captura · M personal', hideControls:'Ocultar controles', openControls:'Abrir controles', fullscreen:'Pantalla completa', exitFullscreen:'Salir de pantalla completa', language:'Idioma', hint:'Toca o arrastra para moldear el flujo', recOn:'Modo grabación activado', recOff:'Modo grabación desactivado', screenshotSaved:'Captura guardada', hud:(theme,q)=>`${theme} • Calidad ${q} • H: controles` },
+    fr:{ title:'Simulation de fluides', brandSub:'Façonnez le flux au toucher', appearance:'Apparence', flowMotion:'Flux et mouvement', quality:'Qualité', qualityHint:'Démarrage : élevée', rainbow:'Arc-en-ciel', neon:'Néon', single:'Couleur unique', customColor:'Couleur personnalisée', pattern:'Taille du motif', speed:'Vitesse de simulation', curl:'Tourbillon', radius:'Épaisseur de la traînée', dissipation:'Dissipation', low:'Faible', medium:'Moyenne', high:'Élevée', reset:'↺ Réinitialiser', background:'Arrière-plan', backgroundHint:'Ambiance du canevas', bgBlack:'Noir', bgMidnight:'Minuit', bgDeepBlue:'Bleu profond', bgWhite:'Blanc', backgroundColor:'Arrière-plan personnalisé', shortcuts:'H masquer/afficher · T thème · F plein écran · R enregistrer · S capture · M pers.', hideControls:'Masquer les contrôles', openControls:'Ouvrir les contrôles', fullscreen:'Plein écran', exitFullscreen:'Quitter le plein écran', language:'Langue', hint:'Touchez ou glissez pour façonner le flux', recOn:'Mode enregistrement activé', recOff:'Mode enregistrement désactivé', screenshotSaved:'Capture enregistrée', hud:(theme,q)=>`${theme} • Qualité ${q} • H : contrôles` },
+    ar:{ title:'محاكاة السوائل', brandSub:'شكّل التدفق باللمس', appearance:'المظهر', flowMotion:'التدفق والحركة', quality:'الجودة', qualityHint:'البدء: عالية', rainbow:'قوس قزح', neon:'نيون', single:'لون واحد', customColor:'لون مخصص', pattern:'حجم النمط', speed:'سرعة المحاكاة', curl:'دوامة', radius:'سُمك الأثر', dissipation:'التلاشي', low:'منخفضة', medium:'متوسطة', high:'عالية', reset:'↺ إعادة ضبط', background:'الخلفية', backgroundHint:'أجواء اللوحة', bgBlack:'أسود', bgMidnight:'ليلي', bgDeepBlue:'أزرق عميق', bgWhite:'أبيض', backgroundColor:'خلفية مخصصة', shortcuts:'H إخفاء/إظهار · T تبديل النمط · F ملء الشاشة · R تسجيل · S لقطة شاشة · M مخصص', hideControls:'إخفاء عناصر التحكم', openControls:'فتح عناصر التحكم', fullscreen:'ملء الشاشة', exitFullscreen:'الخروج من ملء الشاشة', language:'اللغة', hint:'المس أو اسحب لتشكيل التدفق', recOn:'وضع التسجيل مفعّل', recOff:'وضع التسجيل متوقف', screenshotSaved:'تم حفظ لقطة الشاشة', hud:(theme,q)=>`${theme} • الجودة ${q} • H: التحكم` },
+    bn:{ title:'ফ্লুইড সিমুলেশন', brandSub:'স্পর্শে প্রবাহকে আকার দিন', appearance:'দৃশ্য', flowMotion:'প্রবাহ ও গতি', quality:'গুণমান', qualityHint:'শুরু: উচ্চ', rainbow:'রেইনবো', neon:'নিয়ন', single:'এক রঙ', customColor:'কাস্টম রঙ', pattern:'প্যাটার্নের আকার', speed:'সিমুলেশন গতি', curl:'ঘূর্ণি', radius:'ট্রেইলের পুরুত্ব', dissipation:'ক্ষয়', low:'নিম্ন', medium:'মাঝারি', high:'উচ্চ', reset:'↺ রিসেট', background:'পটভূমি', backgroundHint:'ক্যানভাসের আবহ', bgBlack:'কালো', bgMidnight:'মধ্যরাত', bgDeepBlue:'গাঢ় নীল', bgWhite:'সাদা', backgroundColor:'কাস্টম পটভূমি', shortcuts:'H লুকান/দেখান · T থিম · F ফুলস্ক্রিন · R রেকর্ড · S স্ক্রিনশট · M কাস্টম', hideControls:'কন্ট্রোল লুকান', openControls:'কন্ট্রোল খুলুন', fullscreen:'ফুলস্ক্রিন', exitFullscreen:'ফুলস্ক্রিন থেকে বের হন', language:'ভাষা', hint:'স্পর্শ করুন বা টেনে আনুন', recOn:'রেকর্ডিং মোড চালু', recOff:'রেকর্ডিং মোড বন্ধ', screenshotSaved:'স্ক্রিনশট সংরক্ষিত হয়েছে', hud:(theme,q)=>`${theme} • ${q} মান • H: কন্ট্রোল` },
+    pt:{ title:'Simulação de fluidos', brandSub:'Modele o fluxo com o toque', appearance:'Aparência', flowMotion:'Fluxo e movimento', quality:'Qualidade', qualityHint:'Início: alta', rainbow:'Arco-íris', neon:'Neon', single:'Uma cor', customColor:'Cor personalizada', pattern:'Tamanho do padrão', speed:'Velocidade da simulação', curl:'Vórtice', radius:'Espessura do rastro', dissipation:'Dissipação', low:'Baixa', medium:'Média', high:'Alta', reset:'↺ Redefinir', background:'Fundo', backgroundHint:'Atmosfera da tela', bgBlack:'Preto', bgMidnight:'Meia-noite', bgDeepBlue:'Azul profundo', bgWhite:'Branco', backgroundColor:'Fundo personalizado', shortcuts:'H ocultar/mostrar · T tema · F tela cheia · R gravar · S captura · M personal.', hideControls:'Ocultar controles', openControls:'Abrir controles', fullscreen:'Tela cheia', exitFullscreen:'Sair da tela cheia', language:'Idioma', hint:'Toque ou arraste para moldar o fluxo', recOn:'Modo de gravação ativado', recOff:'Modo de gravação desativado', screenshotSaved:'Captura salva', hud:(theme,q)=>`${theme} • Qualidade ${q} • H: controles` },
+    ru:{ title:'Симуляция жидкости', brandSub:'Формируйте поток касанием', appearance:'Вид', flowMotion:'Поток и движение', quality:'Качество', qualityHint:'Старт: высокое', rainbow:'Радуга', neon:'Неон', single:'Один цвет', customColor:'Свой цвет', pattern:'Размер узора', speed:'Скорость симуляции', curl:'Вихрь', radius:'Толщина следа', dissipation:'Затухание', low:'Низкое', medium:'Среднее', high:'Высокое', reset:'↺ Сбросить', background:'Фон', backgroundHint:'Атмосфера холста', bgBlack:'Чёрный', bgMidnight:'Полночь', bgDeepBlue:'Тёмно-синий', bgWhite:'Белый', backgroundColor:'Свой фон', shortcuts:'H скрыть/показать · T тема · F полный экран · R запись · S скриншот · M настройки', hideControls:'Скрыть управление', openControls:'Открыть управление', fullscreen:'Полный экран', exitFullscreen:'Выйти из полного экрана', language:'Язык', hint:'Коснитесь или проведите пальцем', recOn:'Режим записи включён', recOff:'Режим записи выключен', screenshotSaved:'Скриншот сохранён', hud:(theme,q)=>`${theme} • Качество: ${q} • H: управление` },
+    id:{ title:'Simulasi Fluida', brandSub:'Bentuk aliran dengan sentuhan', appearance:'Tampilan', flowMotion:'Aliran & Gerakan', quality:'Kualitas', qualityHint:'Mulai: tinggi', rainbow:'Pelangi', neon:'Neon', single:'Satu warna', customColor:'Warna kustom', pattern:'Ukuran pola', speed:'Kecepatan simulasi', curl:'Pusaran', radius:'Ketebalan jejak', dissipation:'Pelemahan', low:'Rendah', medium:'Sedang', high:'Tinggi', reset:'↺ Atur ulang', background:'Latar', backgroundHint:'Suasana kanvas', bgBlack:'Hitam', bgMidnight:'Tengah malam', bgDeepBlue:'Biru tua', bgWhite:'Putih', backgroundColor:'Latar kustom', shortcuts:'H sembunyikan/tampilkan · T tema · F layar penuh · R rekam · S tangkapan layar · M kustom', hideControls:'Sembunyikan kontrol', openControls:'Buka kontrol', fullscreen:'Layar penuh', exitFullscreen:'Keluar layar penuh', language:'Bahasa', hint:'Sentuh atau seret untuk membentuk aliran', recOn:'Mode rekam aktif', recOff:'Mode rekam nonaktif', screenshotSaved:'Tangkapan layar disimpan', hud:(theme,q)=>`${theme} • Kualitas ${q} • H: kontrol` },
+    tr:{ title:'Akışkan Simülasyonu', brandSub:'Akışı dokunarak şekillendir', appearance:'Görünüm', flowMotion:'Akış & Hareket', quality:'Kalite', qualityHint:'Başlangıç: Yüksek', rainbow:'Gökkuşağı', neon:'Neon', single:'Tek renk', customColor:'Özel renk', pattern:'Desen boyutu', speed:'Simülasyon hızı', curl:'Girdap', radius:'İz kalınlığı', dissipation:'Sönme', low:'Düşük', medium:'Orta', high:'Yüksek', reset:'↺ Sıfırla', background:'Arka plan', backgroundHint:'Tuval atmosferi', bgBlack:'Siyah', bgMidnight:'Gece', bgDeepBlue:'Koyu mavi', bgWhite:'Beyaz', backgroundColor:'Özel arka plan', shortcuts:'H gizle/göster · T tema · F tam ekran · R kayıt · S ekran görüntüsü · M özel ayar', hideControls:'Kontrolleri gizle', openControls:'Kontrolleri aç', fullscreen:'Tam ekran', exitFullscreen:'Tam ekrandan çık', language:'Dil', hint:'Akışı şekillendirmek için dokun veya sürükle', recOn:'Kayıt modu açık', recOff:'Kayıt modu kapalı', screenshotSaved:'Ekran görüntüsü kaydedildi', hud:(theme,q)=>`${theme} • ${q} kalite • H: Kontroller` }
   };
   const THEME_LABELS = {
     en:{'Duman':'Smoke','Noktalar':'Dots','Çizgiler':'Lines','Piksel':'Pixel','Kontur':'Contour','Neon Hat':'Neon Lines','Akış Çizgileri':'Flow Lines','Ayna':'Mirror','Termal':'Thermal','Cam':'Glass','Mürekkep':'Ink','Parçacık İzleri':'Particle Trails','Aurora':'Aurora','Su':'Water','Hava':'Air','Plazma':'Plasma'},
@@ -747,6 +1016,9 @@ canvas.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') po
     tr:{'Duman':'Duman','Noktalar':'Noktalar','Çizgiler':'Çizgiler','Piksel':'Piksel','Kontur':'Kontur','Neon Hat':'Neon Hat','Akış Çizgileri':'Akış Çizgileri','Ayna':'Ayna','Termal':'Termal','Cam':'Cam','Mürekkep':'Mürekkep','Parçacık İzleri':'Parçacık İzleri','Aurora':'Aurora','Su':'Su','Hava':'Hava','Plazma':'Plazma'}
   };
   // ---------- Modern kontrol paneli ----------
+  EXTRA_THEMES.forEach(theme => {
+    LANGS.forEach(lang => { THEME_LABELS[lang][theme.name] = lang === 'tr' ? theme.name : theme.en; });
+  });
   const guiVisibleDefault = false;
   let guiVisible = guiVisibleDefault;
   const hudText = document.getElementById('hudText');
@@ -776,6 +1048,12 @@ canvas.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') po
     btn.dataset.theme = theme;
     btn.setAttribute('role', 'option');
     btn.innerHTML = `<span class="themeSwatch"></span><span class="themeLabel"></span>`;
+    const extraTheme = EXTRA_THEMES.find(item => item.name === theme);
+    if (extraTheme) {
+      const swatch = btn.querySelector('.themeSwatch');
+      swatch.style.background = `linear-gradient(135deg, ${extraTheme.colors.join(', ')})`;
+      swatch.style.boxShadow = `0 0 10px ${extraTheme.colors[1]}66`;
+    }
     btn.addEventListener('click', () => {
       cfg.theme = theme;
       syncUi();
@@ -821,7 +1099,7 @@ canvas.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') po
   document.querySelectorAll('[data-bg]').forEach(btn => btn.addEventListener('click', () => setBackground(btn.dataset.bg)));
   backgroundInput.addEventListener('input', () => setBackground(backgroundInput.value));
   document.querySelectorAll('[data-quality]').forEach(btn => btn.addEventListener('click', () => {
-    cfg.quality = btn.dataset.quality; document.querySelectorAll('[data-quality]').forEach(b => b.classList.toggle('active', b === btn)); initFramebuffers();
+    cfg.quality = btn.dataset.quality; resize(); initFramebuffers(); syncUi();
   }));
 
   function applyLanguage(code) {
@@ -855,6 +1133,7 @@ canvas.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') po
     document.getElementById('qualityLow').textContent = t.low;
     document.getElementById('qualityMedium').textContent = t.medium;
     document.getElementById('qualityHigh').textContent = t.high;
+    document.getElementById('qualityUltra').textContent = 'Ultra';
     document.getElementById('resetBtn').textContent = t.reset;
     document.getElementById('shortcutText').textContent = t.shortcuts;
     document.getElementById('closeControls').setAttribute('aria-label', t.hideControls);
@@ -881,7 +1160,7 @@ canvas.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') po
     document.querySelectorAll('[data-quality]').forEach(btn => btn.classList.toggle('active', btn.dataset.quality === cfg.quality));
     updateHud();
   }
-  function updateHud() { const t = I18N[currentLanguage]; hudText.textContent = t.hud(THEME_LABELS[currentLanguage][cfg.theme] || cfg.theme, t[{ 'Düşük':'low', 'Orta':'medium', 'Yüksek':'high' }[cfg.quality]]); }
+  function updateHud() { const t = I18N[currentLanguage]; hudText.textContent = t.hud(THEME_LABELS[currentLanguage][cfg.theme] || cfg.theme, cfg.quality === 'Ultra' ? 'Ultra' : t[{ 'Düşük':'low', 'Orta':'medium', 'Yüksek':'high' }[cfg.quality]]); }
 
   function setControlsVisible(show) {
     guiVisible = !!show;
@@ -900,6 +1179,45 @@ canvas.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') po
   document.getElementById('resetBtn').addEventListener('click', () => {
     Object.assign(cfg, DEFAULTS); initFramebuffers(); syncUi();
   });
+
+  // ---------- Özel / Rastgele Ayarlar Fonksiyonu ----------
+  // M sadece kullanıcının belirlediği ayarları rastgele değiştirir.
+  // Theme artık Appearance bölümünde rastgele değiştirilir.
+  // Vortex (curl) ve Custom Color (color) korunur.
+  function randomStep(min, max, step) {
+    const count = Math.round((max - min) / step);
+    const index = Math.floor(Math.random() * (count + 1));
+    return Number((min + index * step).toFixed(2));
+  }
+
+  function randomTheme() {
+    // Mürekkep elle seçilebilir; M'nin rastgele tema havuzuna dahil değildir.
+    const candidates = THEMES.filter(theme => theme !== 'Mürekkep' && theme !== cfg.theme);
+    if (!candidates.length) return cfg.theme;
+    // M'ye her basışta mümkünse mevcut temadan farklı bir tema seç.
+    return candidates[Math.floor(Math.random() * candidates.length)];
+  }
+
+  function applyCustomSettings() {
+    // Kullanıcının belirlediği aralıklarda rastgele ayarla.
+    cfg.theme = randomTheme();
+    cfg.dissipation = randomStep(0.60, 3.00, 0.05);
+    cfg.speed = randomStep(0.50, 2.60, 0.01);
+    cfg.pattern = randomStep(4, 24, 1);
+    cfg.splatRadius = randomStep(0.20, 0.50, 0.01);
+
+    // Her zaman sabit kalacak ayarlar.
+    cfg.quality = 'Yüksek';
+    setBackground('#000000');
+    setColorMode('Gökkuşağı');
+
+    // cfg.curl ve cfg.color (Custom Color) ASLA değiştirilmez.
+    initFramebuffers();
+    syncUi();
+    showToast('Rastgele tema ve ayarlar uygulandı!');
+  }
+
+  document.getElementById('customThemeBtn').addEventListener('click', applyCustomSettings);
 
   // ---------- Tam ekran ----------
   const fsButton = document.getElementById('fullscreenBtn');
@@ -991,6 +1309,13 @@ canvas.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') po
   }
 
   addEventListener('keydown', e => {
+    // M kısayolu input/select odaktayken de mutlaka çalışsın.
+    if (e.key.toLowerCase() === 'm') {
+      e.preventDefault();
+      applyCustomSettings();
+      return;
+    }
+
     const tag = document.activeElement?.tagName;
     if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
     const t = I18N[currentLanguage];
@@ -1015,7 +1340,9 @@ canvas.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') po
 
 // ---------- Ana döngü ----------
 function resize() {
-  const dpr = Math.min(window.devicePixelRatio || 1, isMobile ? 1.5 : 2);
+  const dpr = cfg.quality === 'Ultra'
+    ? Math.min(Math.max(window.devicePixelRatio || 1, 1.5), isMobile ? 2 : 3)
+    : Math.min(window.devicePixelRatio || 1, isMobile ? 1.5 : 2);
   const cssW = document.fullscreenElement ? window.innerWidth : document.documentElement.clientWidth;
   const cssH = document.fullscreenElement ? window.innerHeight : document.documentElement.clientHeight;
   const w = Math.max(1, Math.floor(cssW * dpr));
